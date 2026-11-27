@@ -145,26 +145,72 @@ i32 edad = 20;
 edad = edad + 1;
 ```
 
-Las condiciones y los bucles tendrán paréntesis alrededor de la condición y
-llaves para sus cuerpos:
+### Condiciones
+
+Se admitirán `if`, `else if` y `else`. Cada condición deberá producir un `bool`;
+no habrá conversión automática de enteros a booleanos. Se evaluarán en orden y
+se ejecutará únicamente el primer bloque cuya condición sea verdadera, o el
+`else` si ninguna lo es. `else if` y `else` serán opcionales.
 
 ```c
-if (edad >= 18) {
-    print("Mayor de edad");
+if (edad < 18) {
+    println("Menor");
+} else if (edad == 18) {
+    println("Tiene 18");
 } else {
-    print("Menor de edad");
-}
-
-while (edad < 25) {
-    edad = edad + 1;
+    println("Mayor");
 }
 ```
 
-Se propone que las condiciones produzcan un `bool`, sin convertir automáticamente
-enteros a booleanos. Los ejemplos introducen las comparaciones `>=` y `<`; el
-conjunto completo de operadores y su precedencia queda pendiente.
-`if`/`else` y `while` constituyen la base propuesta. `for`, `do`/`while`,
-`switch`, `break` y `continue` quedan pendientes de confirmación. La traducción
+Los paréntesis alrededor de las condiciones y las llaves de los cuerpos serán
+obligatorios, incluso cuando el cuerpo contenga una sola sentencia.
+
+### Bucles
+
+Se admitirán `while` y `for`, con condiciones de tipo `bool` y cuerpos entre
+llaves obligatorias.
+
+```c
+while (contador < 10) {
+    contador++;
+}
+
+for (i32 i = 0; i < 10; i++) {
+    println(i);
+}
+```
+
+`while` comprobará la condición antes de cada vuelta; si es falsa desde el
+principio, no ejecutará el cuerpo.
+
+En `for (inicializacion; condicion; actualizacion)`, la inicialización se
+ejecutará una sola vez. Antes de cada vuelta se comprobará la condición; tras
+cada vuelta se ejecutará la actualización. Una variable declarada en la
+inicialización solo será visible en la condición, actualización y cuerpo de
+ese `for`, no después del bucle. La posibilidad de omitir partes de la cabecera
+queda pendiente de definir.
+
+El incremento posfijo `i++` usado en los ejemplos aumentará un `i32` en uno.
+Sus reglas ante desbordamientos y el resto de variantes de incremento y
+decremento se cerrarán junto con los operadores.
+
+### Salidas y retornos
+
+- `break;` terminará el bucle envolvente más cercano.
+- `continue;` pasará a la siguiente vuelta del bucle envolvente más cercano.
+  En `while` volverá a evaluar la condición; en `for` ejecutará primero la
+  actualización y después comprobará la condición.
+- `return expresion;` terminará la función y devolverá un valor compatible
+  con su tipo de retorno.
+- `return;` terminará una función `void` sin devolver un valor.
+
+Usar `break` o `continue` fuera de un bucle será un error de compilación.
+También será un error devolver un valor desde una función `void` o usar
+`return;` en una función que deba devolver un valor. Todos los caminos que
+puedan finalizar una función con retorno deberán devolver un valor compatible.
+
+`switch`, `do`/`while` y `goto` quedan fuera de la primera versión. Tampoco se
+incluye el operador condicional ternario. La traducción de estas estructuras
 a bytecode se diseñará después.
 
 ## Operadores y notación pendientes
@@ -180,7 +226,7 @@ admitidos, la precedencia y la asociatividad deberán definirse para WTZ.
 | Lógica | `&&`, `||`, `!`; `&&` y `||` tendrán cortocircuito. |
 | Bits sobre enteros | `&`, `|`, `^`, `~`, `<<`, `>>`. |
 | Asignación | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`. |
-| Incremento y decremento | `++`, `--`, prefijos y posfijos. |
+| Incremento y decremento | Incremento posfijo `i++` definido para los bucles; otras variantes de `++` y `--` pendientes. |
 
 La concatenación de strings con `+` es una regla propia del lenguaje.
 Los detalles de conversiones numéricas y errores aritméticos requieren una
@@ -212,14 +258,12 @@ de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 
 La existencia de `main` dentro de un namespace y declarada con `public` es obligatoria. Se propone la firma `i32 main()`, sin
 parámetros, y `return 0;` para representar una terminación correcta. La firma
-definitiva, las reglas de retorno, la recursión y el paso de argumentos quedan
-pendientes; no se heredan de C.
+definitiva, la recursión y el paso de argumentos quedan pendientes; no se
+heredan de C. Las reglas de retorno se describen en el control de flujo.
 
 Los fragmentos de sentencias de este documento deberán colocarse dentro de una
 función para formar un programa. Los namespaces agruparán las declaraciones de variables globales y funciones;
-se propone agregar definiciones de structs dentro de ellos. El uso de
-`return;` en funciones `void` queda pendiente de cerrar junto con las reglas
-de retorno.
+se propone agregar definiciones de structs dentro de ellos.
 
 ## Modelo de datos pendiente
 
@@ -394,11 +438,11 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 
 - Gramática formal y restricciones de identificadores e inicializadores globales.
 - Conversiones numéricas, división, desbordamientos y desplazamientos inválidos.
-- Firma y selección de `main`, retornos, recursión y paso de argumentos.
+- Firma y selección de `main`, recursión y paso de argumentos.
 - Alcance de `use`, namespaces anidados y organización de módulos y archivos.
 - Modelo de tipos de valor y referencia, copia y administración de memoria.
 - Aplicación detallada de visibilidad a structs y sus campos.
-- Inclusión de otras estructuras de control y reglas completas de operadores.
+- Omisión de partes de la cabecera de `for` y reglas completas de operadores.
 - Creación, acceso a campos, mutabilidad, copia e inicialización de structs.
 - Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.
 - Fin de entrada, errores de lectura, entrada no ASCII y formato de valores en la salida.

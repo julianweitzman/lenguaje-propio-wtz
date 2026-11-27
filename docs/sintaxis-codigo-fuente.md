@@ -14,8 +14,8 @@ y la gramática definitiva queda pendiente.
 - La inicialización será opcional en declaraciones de variables globales,
   locales y atributos. Leer un valor antes de inicializarlo será un error de
   compilación.
-- Las declaraciones globales se escribirán con `const`; su semántica detallada
-  de inicialización y reasignación se precisará por separado.
+- Las declaraciones globales se escribirán con `const`. Las constantes serán
+  inmutables y también podrán declararse dentro de funciones.
 - Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
 - El código fuente completo, incluidos comentarios y strings, será ASCII.
 - C será únicamente una referencia de estilo para la estructura del código.
@@ -65,6 +65,25 @@ El tamaño de un `i32` no determina el tamaño de un string ni de su referencia.
 Los strings tendrán longitud variable; su representación se explica en la
 [documentación del bytecode](sintaxis-bytecode.md).
 
+## Tipos anulables
+
+`T?` representará un valor de tipo `T` o su ausencia, escrita como `null`.
+Por ejemplo, `string` no admitirá `null`, pero `string?` sí. `null` será distinto
+del string vacío `""` y de una variable sin inicializar: asignar `null` inicializa
+una variable anulable, mientras que leer una variable no inicializada es un error.
+
+Antes de usar un valor anulable como su tipo base deberá comprobarse que no es
+`null`. El compilador reconocerá esa comprobación en la rama correspondiente:
+
+```c
+string? entrada = input();
+if (entrada != null) {
+    println(entrada);
+} else {
+    println("Fallo de lectura");
+}
+```
+
 ## Variables globales y locales
 
 Las variables globales se declararán fuera de las funciones, con la forma
@@ -105,6 +124,18 @@ también se aplicará a atributos y variables globales. Una operación que lea y
 escriba, como `contador++`, requiere un valor inicializado previamente.
 Los detalles del análisis entre funciones quedan pendientes, sin cambiar la
 prohibición de leer valores no inicializados.
+
+`const` declarará un valor inmutable tanto en el ámbito global como dentro de
+funciones:
+
+```c
+const i32 limite = 10;
+```
+
+Una vez inicializada una constante no podrá recibir otra asignación. La regla
+general permite omitir su inicializador; quedan por precisar la asignación
+inicial diferida y el alcance de la inmutabilidad para valores compuestos y
+referencias. No se permitirá usar un parámetro mutable para eludir `const`.
 
 Los parámetros recibirán sus valores al llamar a la función y no necesitarán
 un inicializador escrito en la declaración. Las restricciones de los
@@ -254,13 +285,12 @@ para las demás categorías queda pendiente.
 | Incremento y decremento | Incremento posfijo `i++` definido para los bucles; otras variantes de `++` y `--` pendientes. |
 
 La concatenación de strings con `+` es una regla propia del lenguaje.
-El overflow quedará bajo responsabilidad del usuario, sin introducir por ahora
-un error automático por desbordamiento. El usuario indicó que el ejemplo
-`2147483647 + 1` debe dar `-1`. Esa intención queda registrada, pero la regla
-numérica general requiere aclaración: el desbordamiento modular habitual de
-un entero con signo de 32 bits produciría `-2147483648`, no `-1`. No se adopta
-silenciosamente ninguna de las dos reglas como especificación completa.
-Las conversiones y otros errores aritméticos siguen pendientes.
+El overflow entero tendrá comportamiento modular, bajo responsabilidad del
+usuario, sin error automático por desbordamiento. Para `i32` se conservarán los
+32 bits inferiores del resultado y se interpretarán con signo en complemento
+a dos: `2147483647 + 1` dará `-2147483648`, y `-2147483648 - 1` dará
+`2147483647`. Esta regla sustituye el ejemplo anterior que indicaba `-1`.
+Las conversiones, división por cero y otros errores aritméticos siguen pendientes.
 
 También se propone la notación de comentarios `//` y `/* ... */`, y escapes
 como `\t`, `\\` y `\"`, restringidos a ASCII. Su conjunto completo queda
@@ -289,24 +319,42 @@ de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 La firma del punto de entrada será `i32 main()`, sin parámetros, dentro de un
 namespace y sin modificador `public`. `return 0;` indicará terminación correcta.
 Se permitirá recursión y llamar a funciones declaradas después, sin declaraciones
-anticipadas. El paso de argumentos queda pendiente del modelo de datos.
+anticipadas. El paso de argumentos se describe a continuación.
 
 Los fragmentos de sentencias de este documento deberán colocarse dentro de una
 función para formar un programa. Los namespaces agruparán las declaraciones de variables globales y funciones;
 se propone agregar definiciones de structs dentro de ellos.
 
-## Modelo de datos pendiente
+## Paso de argumentos y modelo de datos
 
-La asignación, la copia y el paso de argumentos se definirán cuando se diseñe
-cómo maneja los datos el programa. Como orientación inicial se considera un
-modelo con tipos de valor y tipos de referencia, posiblemente mediante `&`.
-Su funcionamiento se analizará después. Esta es
-una propuesta de diseño, no la adopción de sus reglas.
+Un parámetro declarado como `tipo nombre` recibirá una copia. Cambiar ese
+parámetro dentro de la función no modificará el valor del llamador:
 
-Todavía no se decide qué tipos pertenecerán a cada categoría, cuándo se copiará
-un valor, cuándo se compartirá una referencia ni cómo se administrará su memoria.
-Estas decisiones incluyen el comportamiento de los structs y los parámetros de
-funciones. Tampoco se incorporan por ahora modificadores como `ref` u `out`.
+```c
+void cambiar(i32 numero) {
+    numero = 20;
+}
+```
+
+Un parámetro declarado como `tipo* nombre` permitirá modificar el dato original
+del llamador. El asterisco expresa aquí el acceso al original en lugar de una
+copia:
+
+```text
+void cambiar_original(i32* numero) {
+    ... cuerpo pendiente de la sintaxis de acceso al dato ...
+}
+```
+
+El segundo ejemplo ilustra la firma; el cuerpo no es código ejecutable. Quedan
+por definir la sintaxis de llamada y desreferencia, la posibilidad de referencias
+nulas y las reglas de vida útil y aliasing. No se incorpora automáticamente el
+sistema de punteros ni la aritmética de direcciones de C.
+
+La semántica de copia de valores compuestos, asignación y retornos y la
+administración de memoria siguen pendientes. La propuesta anterior de usar `&`
+no queda adoptada: la notación acordada para parámetros modificables es `tipo*`.
+El tratamiento de `self` se decidirá por separado.
 
 ## Namespaces y visibilidad
 
@@ -525,8 +573,9 @@ El orden de los campos no importará. Repetir un campo, nombrar uno inexistente
 o asignarle un valor incompatible será un error de compilación. Se exigirá
 el nombre del tipo: `Persona { ... }`, sin la forma abreviada `{ ... }`.
 
-La asignación, copia y paso de structs a funciones quedan pendientes del modelo
-de datos. La ubicación permitida de los bloques `impl` también queda pendiente.
+Los parámetros de structs seguirán la distinción entre copia y acceso al
+original mediante `tipo*`; el alcance de esa copia y las asignaciones quedan
+pendientes del modelo de datos. La ubicación permitida de los bloques `impl` también queda pendiente.
 
 ## Entrada y salida
 
@@ -535,23 +584,19 @@ no recibirá parámetros. En caso de éxito devolverá texto ASCII sin el termin
 de línea; una línea vacía devolverá `""`. En caso de fallo devolverá `null`.
 El tratamiento de fin de entrada y caracteres no ASCII queda pendiente.
 
-Como el resultado puede ser un string o `null`, la firma anterior
-`string input();` debe revisarse al definir los tipos anulables. Queda pendiente
-si `null` tendrá un tipo propio o representará la ausencia de un valor mediante
-un tipo opcional. La sintaxis de anotación y comprobación aún no está aprobada.
-El ejemplo siguiente muestra la lectura, pero debe completarse con el manejo
-de `null` cuando se cierre esa sintaxis.
-
-`print(valor)` mostrará el valor sin agregar un salto de línea.
-`println(valor)` mostrará el valor y agregará un salto de línea al final.
-También se podrá insertar un salto mediante el escape `\n` dentro de un string.
+La firma será `string? input()`: devolverá un string o `null`. Antes de usar
+el resultado como texto habrá que comprobar que no sea `null`.
 
 ```c
 namespace aplicacion {
     i32 main() {
         print("Nombre: ");
-        string nombre = input();
-        println("Hola, " + nombre);
+        string? nombre = input();
+        if (nombre != null) {
+            println("Hola, " + nombre);
+        } else {
+            println("Fallo de lectura");
+        }
         print("Fin\n");
         return 0;
     }
@@ -571,10 +616,10 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 ## Decisiones pendientes
 
 - Gramática formal y restricciones de identificadores e inicializadores globales.
-- Conversiones numéricas, división, regla exacta de overflow y desplazamientos inválidos.
-- Tipo y comprobación de `null`, firma anulable de `input` y semántica de `const`.
+- Conversiones numéricas, división y desplazamientos inválidos.
+- Inicialización diferida de constantes e inmutabilidad de compuestos y referencias.
 - Alcance de `use` entre bloques del mismo archivo y carga de archivos.
-- Modelo de valor y referencia, posible `&`, copia y administración de memoria.
+- Llamadas y acceso mediante `tipo*`, copia de compuestos y administración de memoria.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
 - Análisis de inicialización entre funciones y semántica de `self`.
 - Ubicación permitida de los bloques `impl`.

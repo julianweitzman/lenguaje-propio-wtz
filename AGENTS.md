@@ -8,6 +8,8 @@ WTZ es un lenguaje educativo con compilador y máquina virtual basada en pila pr
 - `docs/arquitectura.md`: responsabilidades, formato de bytecode y decisiones pendientes.
 - `docs/sintaxis-codigo-fuente.md`: propuesta del lenguaje fuente y sus tipos.
 - `docs/sintaxis-bytecode.md`: vista textual de las instrucciones que se codificarán en binario.
+- `docs/decisiones-pendientes.md`: inventario de cuestiones por decidir, no reglas aprobadas.
+- `docs/formulario-decisiones.html`: formulario autónomo para elegir y exportar decisiones.
 
 Todavía no existen `Cargo.toml`, código, pruebas ni recursos gráficos. Al implementar, seguir la separación propuesta: `src/compiler/` para análisis y generación de código, `src/bytecode/` para opcodes y codificación binaria, y `src/vm/` para ejecución. Ubicar pruebas de integración en `tests/` y programas `.wtz` de ejemplo en `examples/`.
 

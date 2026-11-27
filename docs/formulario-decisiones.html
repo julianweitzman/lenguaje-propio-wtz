@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="html-name" content="WTZ · Formulario de decisiones del lenguaje">
+    <meta name="description" content="Revisa decisiones pendientes de WTZ, compara propuestas y exporta tus elecciones sin modificar la especificación; funciona localmente sin conexión.">
+    <title>WTZ · Decisiones del lenguaje</title>
+    <style>
+        :root { color-scheme: light; --ink:#192e32; --muted:#52686d; --paper:#f6f5ef; --card:#fff; --line:#ccd6d4; --accent:#006a64; --soft:#e5f2ed; --warn:#7e4b08; }
+        * { box-sizing:border-box; }
+        body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.6 system-ui,sans-serif; }
+        header, main, footer { max-width:1100px; padding:28px; margin:auto; }
+        header { padding-top:52px; }
+        h1 { font-size:clamp(2rem,5vw,3.5rem); line-height:1.1; letter-spacing:-.04em; margin:12px 0 20px; }
+        h2 { line-height:1.25; }
+        .eyebrow { color:var(--accent); font-weight:750; letter-spacing:.12em; font-size:.8rem; text-transform:uppercase; }
+        p { max-width:80ch; }
+        .muted, small { color:var(--muted); }
+        .notice { border-left:4px solid var(--accent); padding:12px 18px; background:var(--soft); }
+        details { border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:16px 0; background:var(--card); }
+        summary { cursor:pointer; font-weight:650; }
+        .toolbar { position:sticky; top:0; z-index:2; background:var(--paper); border-block:1px solid var(--line); padding:14px 0; }
+        .filters, .actions { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+        .filters > label { display:grid; gap:4px; flex:1 1 180px; font-size:.85rem; font-weight:650; }
+        input[type=search], select, textarea { font:inherit; background:white; color:var(--ink); border:1px solid #879b9b; border-radius:6px; padding:10px; width:100%; min-width:0; }
+        textarea { min-height:76px; resize:vertical; }
+        button, .file-label { font:inherit; font-weight:650; border:1px solid var(--accent); border-radius:6px; padding:9px 14px; color:var(--accent); background:white; cursor:pointer; }
+        .primary { background:var(--accent); color:white; }
+        button:hover, .file-label:hover { filter:brightness(.96); }
+        :focus-visible { outline:3px solid #c47506; outline-offset:3px; }
+        progress { accent-color:var(--accent); width:100%; height:14px; }
+        .progress-row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin:8px 0; font-size:.9rem; }
+        #storage { font-size:.85rem; }
+        .group-title { margin-top:36px; }
+        fieldset { min-width:0; margin:22px 0; padding:22px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+        legend { max-width:100%; font-weight:750; font-size:1.12rem; padding:0 8px; }
+        .tag { display:inline-block; padding:2px 8px; background:var(--soft); color:var(--accent); border-radius:4px; font-size:.75rem; font-weight:700; }
+        pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#172f33; color:#eef7ef; padding:14px; border-radius:6px; font-size:.9rem; }
+        code { font-family:ui-monospace,monospace; }
+        .option { display:grid; grid-template-columns:20px 1fr; align-items:start; gap:10px; padding:12px; border:1px solid var(--line); border-radius:6px; margin:9px 0; cursor:pointer; }
+        .option:has(input:checked) { border-color:var(--accent); background:var(--soft); }
+        input[type=radio] { margin-top:6px; accent-color:var(--accent); }
+        .option strong, .option small { display:block; }
+        .question-footer { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+        .question-footer button { font-size:.8rem; padding:5px 10px; }
+        .notes-label { display:block; font-size:.9rem; font-weight:650; margin-top:14px; }
+        .status { color:var(--muted); font-size:.85rem; }
+        #warnings { color:var(--warn); }
+        #export-preview { min-height:240px; font-family:ui-monospace,monospace; font-size:.85rem; }
+        [hidden] { display:none !important; }
+        .file-label { display:inline-block; }
+        .file-label input { display:none; }
+        footer { padding-bottom:50px; font-size:.9rem; }
+        @media(max-width:600px) { header,main,footer { padding:18px; } header { padding-top:32px; } fieldset { padding:14px; } .toolbar { position:static; } .actions button { flex:1 1 140px; } }
+        @media print { .toolbar,.actions,.question-footer,#export-section { display:none; } fieldset { break-inside:avoid; } body { background:white; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="eyebrow">WTZ / Diseño del lenguaje / 27 noviembre 2026</div>
+        <h1>Las decisiones que faltan.</h1>
+        <p>Elige las reglas que quieres para WTZ. Cada pregunta explica una ambigüedad real de la especificación y sus alternativas. Las recomendaciones son propuestas, no decisiones aprobadas.</p>
+        <p class="notice">No hay respuestas preseleccionadas. Elegir aquí no modifica los archivos del proyecto ni envía mensajes al chat. Al terminar, descarga o copia las respuestas para revisarlas juntos.</p>
+        <details>
+            <summary>Lo que ya está decidido — no necesitas volver a elegirlo</summary>
+            <ul id="known"></ul>
+        </details>
+        <details>
+            <summary>Cómo usar el formulario y qué queda fuera</summary>
+            <p>Puedes responder por partes, marcar «Decidir después» o escribir otra regla. Una decisión aplazada no cuenta como resuelta. El progreso distingue respuestas elegidas de asuntos pendientes.</p>
+            <p>La gramática formal, los programas de ejemplo y los algoritmos de verificación son trabajo posterior. La VM y la traducción a bytecode se discutirán en otra etapa. No hace falta decidir ahora sus estructuras internas.</p>
+            <p>Referencia: <a href="sintaxis-codigo-fuente.md">sintaxis-codigo-fuente.md</a>, commit <code>5f5cdd6</code>. Algunas alternativas señalan explícitamente si requieren revisar una regla existente.</p>
+        </details>
+    </header>
+    <main>
+        <section class="toolbar" aria-label="Buscar y filtrar decisiones">
+            <div class="filters">
+                <label>Buscar<input id="search" type="search" placeholder="Por ejemplo: null, constantes, self…"></label>
+                <label>Tema<select id="group"><option value="">Todos los temas</option></select></label>
+                <label>Estado<select id="state"><option value="">Todos</option><option value="unanswered">Sin responder</option><option value="defer">Decidir después</option><option value="answered">Con decisión</option></select></label>
+            </div>
+            <div class="progress-row"><span id="count"></span><span id="visible"></span></div>
+            <progress id="progress" value="0" max="42" aria-label="Decisiones resueltas"></progress>
+            <div id="storage" role="status"></div>
+        </section>
+        <form id="decisions" autocomplete="off"></form>
+        <p id="empty" hidden>No hay preguntas que coincidan. Cambia el texto o los filtros.</p>
+        <section aria-labelledby="review-title" id="export-section">
+            <h2 id="review-title">Revisar y llevarte las respuestas</h2>
+            <p>Puedes exportar aunque queden preguntas sin responder. El archivo incluye sus identificadores, tus elecciones y tus comentarios. Las notas no sustituyen una selección salvo que elijas «Otra regla».</p>
+            <div id="warnings" role="status"></div>
+            <label class="notes-label" for="global-notes">Comentarios generales</label>
+            <textarea id="global-notes" maxlength="15000" placeholder="Prioridades, dudas o reglas que no estén contempladas…"></textarea>
+            <div class="actions" style="margin-top:16px">
+                <button type="button" class="primary" id="download-md">Descargar Markdown</button>
+                <button type="button" id="download-json">Descargar JSON</button>
+                <button type="button" id="copy">Copiar respuestas</button>
+                <label class="file-label">Importar JSON<input id="import" type="file" accept="application/json,.json"></label>
+                <button type="button" id="reset">Borrar respuestas</button>
+            </div>
+            <p id="message" role="status" aria-live="polite"></p>
+            <label class="notes-label" for="export-preview">Vista previa seleccionable — también sirve si falla el portapapeles</label>
+            <textarea id="export-preview" readonly></textarea>
+        </section>
+    </main>
+    <footer>Formulario local y sin dependencias de red. El borrador se guarda en este navegador cuando el almacenamiento está disponible. Exporta una copia para conservarlo al mover el HTML o cambiar de navegador.</footer>
+    <script id="spec-data" type="application/json">{"version": 1, "specCommit": "5f5cdd6", "reviewDate": "2026-11-27", "questions": [{"id": "eq_string", "group": "Comparaciones y tipos", "title": "¿Cómo se comparan dos strings?", "why": "Falta definir == y !=; el texto inmutable no determina por sí solo la igualdad.", "example": "\"Ana\" == \"Ana\"", "options": [{"id": "1", "label": "Por contenido", "detail": "Recomendado: comparar los caracteres, no dónde se guardan."}, {"id": "2", "label": "Sin igualdad de strings", "detail": "Rechazar == y != entre strings en la primera versión."}], "priority": "Primera versión", "source": "Tipos iniciales; Operadores, evaluación y conversiones"}, {"id": "order_string", "group": "Comparaciones y tipos", "title": "¿Se pueden ordenar strings?", "why": "La aritmética y la igualdad no definen \u003c, \u003c=, > y >= para texto.", "example": "\"Ana\" \u003c \"Beto\"", "options": [{"id": "1", "label": "No por ahora", "detail": "Recomendado: reservar el orden a i32."}, {"id": "2", "label": "Orden ASCII", "detail": "Comparación lexicográfica por códigos ASCII."}], "priority": "Primera versión", "source": ""}, {"id": "eq_struct", "group": "Comparaciones y tipos", "title": "¿Qué significa comparar structs?", "why": "La copia por campos ya está acordada; la igualdad de structs aún no.", "example": "persona == otra", "options": [{"id": "1", "label": "No permitido", "detail": "Recomendado: comparar campos explícitamente; evita igualdad recursiva implícita."}, {"id": "2", "label": "Igualdad por campos", "detail": "Mismo tipo y comparación de cada campo; referencias por identidad. Todos los campos deben estar inicializados."}], "priority": "Primera versión", "source": ""}, {"id": "eq_ref", "group": "Comparaciones y tipos", "title": "¿Cómo se comparan referencias?", "why": "Comparar la referencia y comparar el dato son operaciones diferentes.", "example": "referencia == otra", "options": [{"id": "1", "label": "Identidad", "detail": "Recomendado: verdadero si apuntan al mismo dato y tienen tipos compatibles."}, {"id": "2", "label": "Sin igualdad de referencias", "detail": "Solo admitir comparación contra null para referencias anulables."}], "priority": "Primera versión", "source": ""}, {"id": "bool_ops", "group": "Comparaciones y tipos", "title": "¿Qué comparaciones admite bool?", "why": "Ya hay lógica booleana y condiciones bool; falta restringir comparaciones.", "example": "true == false; true \u003c false;", "options": [{"id": "1", "label": "Solo igualdad", "detail": "Recomendado: == y !=; rechazar orden y aritmética."}, {"id": "2", "label": "Igualdad y orden", "detail": "false menor que true; seguir sin aritmética booleana."}], "priority": "Primera versión", "source": ""}, {"id": "nullable_assign", "group": "Anulables", "title": "¿Se puede asignar T directamente a T??", "why": "No es una conversión entre tipos base distintos, sino introducir un valor presente.", "example": "i32? numero = 10;", "options": [{"id": "1", "label": "Sí, envoltura automática", "detail": "Recomendado: permitir T a T?, nunca T? a T sin comprobar."}, {"id": "2", "label": "Exigir forma explícita", "detail": "Habrá que diseñar la sintaxis para un valor presente."}], "priority": "Primera versión", "source": "Tipos anulables"}, {"id": "nullable_eq", "group": "Anulables", "title": "¿Cómo funciona == entre dos anulables?", "why": "La comprobación contra null está acordada, pero no la comparación entre dos T?.", "example": "i32? a = null; i32? b = null; a == b;", "options": [{"id": "1", "label": "Comparar ausencia o contenido", "detail": "Recomendado: dos null son iguales; un null y un valor no; dos presentes usan igualdad del tipo base."}, {"id": "2", "label": "Solo comparar con null", "detail": "Exigir comprobar ambos antes de comparar sus contenidos."}], "priority": "Primera versión", "source": ""}, {"id": "nullable_flow", "group": "Anulables", "title": "¿Hasta dónde se reconoce una comprobación de null?", "why": "El documento solo ejemplifica una rama if. Falta concretar el resto del flujo.", "example": "if (x != null && x > 0) { ... }", "options": [{"id": "1", "label": "Ramas y cortocircuito", "detail": "Recomendado: if/else, while, &&, || y salida temprana; invalidar la prueba cuando cambia el valor o puede alterarlo una llamada."}, {"id": "2", "label": "Solo ramas if", "detail": "Comprobación más limitada: usar bloques explícitos. Invalidar igualmente ante cambios o llamadas que puedan mutar."}], "priority": "Primera versión", "source": ""}, {"id": "nullable_ref", "group": "Anulables", "title": "¿Admitimos referencias a valores anulables?", "why": "T*? ya significa referencia que puede ser null. T?* sería una referencia a un dato anulable.", "example": "i32?* dato; i32*? referencia;", "options": [{"id": "1", "label": "Sí, tipos diferentes", "detail": "Recomendado: ? y * se aplican de izquierda a derecha. No permitir ??; sí referencias a referencias."}, {"id": "2", "label": "Solo una capa", "detail": "Limitar la primera versión a T?, T* y T*? con T base o struct; excluir T?* y referencias a referencias."}], "priority": "Primera versión", "source": ""}, {"id": "nullable_invalidation", "group": "Anulables", "title": "¿Qué pasa si una llamada puede cambiar un anulable comprobado?", "why": "Una referencia compartida puede cambiar un valor después de la comprobación.", "example": "if (dato != null) { cambiar(&dato); print(dato); }", "options": [{"id": "1", "label": "Recomprobar tras posible cambio", "detail": "Recomendado: rechazar el uso como no nulo hasta realizar otra comprobación."}, {"id": "2", "label": "Usar copia local comprobada", "detail": "Exigir copiar a una variable no anulable antes de la llamada; no conservar refinamientos de datos referenciables."}], "priority": "Primera versión", "source": ""}, {"id": "ref_alias", "group": "Referencias y vida útil", "title": "¿Puede haber varias referencias mutables al mismo dato?", "why": "Copiar un campo de referencia ya comparte el dato. Falta decidir si se acepta la coexistencia.", "example": "i32* a = &valor; i32* b = &valor;", "options": [{"id": "1", "label": "Sí, acceso secuencial", "detail": "Recomendado: permitir alias; sin concurrencia en esta versión. Se mantiene la vida útil segura."}, {"id": "2", "label": "Solo una activa", "detail": "Restricción de exclusividad; copiar una referencia requerirá limitar los usos simultáneos. Cambia la utilidad de las copias ya acordadas."}], "priority": "Primera versión", "source": "Paso de argumentos y modelo de datos"}, {"id": "ref_rebind", "group": "Referencias y vida útil", "title": "¿Una variable de referencia puede cambiar de destino?", "why": "Modificar el destino (*r) y cambiar a dónde apunta (r) son cosas distintas.", "example": "r = &otro; *r = 20;", "options": [{"id": "1", "label": "Sí", "detail": "Recomendado: la referencia es reasignable si su declaración no es const; volver a comprobar vida útil."}, {"id": "2", "label": "No", "detail": "El destino se fija al inicializar la referencia; solo se modifica el dato apuntado."}], "priority": "Primera versión", "source": ""}, {"id": "ref_escape", "group": "Referencias y vida útil", "title": "¿Permitimos que una referencia sobreviva al bloque de su creación?", "why": "No puede sobrevivir al dato; falta precisar cómo comprobar retornos de structs que contienen referencias.", "example": "struct Vista { i32* dato; }", "options": [{"id": "1", "label": "Análisis estático de origen", "detail": "Recomendado: permitir solo si el origen vive lo suficiente; rechazar casos no demostrables. Un struct retornado no puede contener referencias."}, {"id": "2", "label": "Referencias dentro de la misma función", "detail": "Más restrictivo: structs con referencias no se retornan y las referencias solo se guardan/usan en la función o llamadas que no las retengan."}], "priority": "Primera versión", "source": ""}, {"id": "ref_const_read", "group": "Referencias y vida útil", "title": "¿Se necesita referencia de solo lectura?", "why": "Ya se prohibió obtener referencias mutables a const; no existe una notación para solo lectura.", "example": "const Persona p = Persona { ... };", "options": [{"id": "1", "label": "No en esta versión", "detail": "Recomendado: pasar constantes por copia; mantener la sintaxis actual."}, {"id": "2", "label": "Añadir referencia de lectura", "detail": "Reabrir el sistema de tipos para definir una notación distinta y su conversión desde referencias mutables."}], "priority": "Puede posponerse", "source": ""}, {"id": "self_fields", "group": "Referencias y vida útil", "title": "¿Cómo accedemos a campos con self* y T*?", "why": "El ejemplo actual usa self.edad aunque las referencias normales se desreferencian con *.", "example": "self.edad; referencia.edad;", "options": [{"id": "1", "label": "Punto automático para ambos", "detail": "Recomendado: r.campo y r.metodo() desreferencian automáticamente si r es T*; no existe ->."}, {"id": "2", "label": "Automático solo en self", "detail": "self.campo es especial; para otras referencias exigir (*r).campo."}, {"id": "3", "label": "Siempre explícito", "detail": "Usar (*self).campo y (*r).campo; corregir el ejemplo actual."}], "priority": "Primera versión", "source": ""}, {"id": "partial_copy", "group": "Inicialización y constantes", "title": "¿Se pueden copiar structs incompletos?", "why": "Se permiten campos omitidos, pero antes de copiar se exige inicializar lo que pueda leerse. Falta un límite preciso.", "example": "Persona a = Persona { edad: 20 }; Persona b = a;", "options": [{"id": "1", "label": "Solo structs completos", "detail": "Recomendado: copiar, pasar por valor, retornar o tomar referencia al struct exige todos sus campos inicializados. Sí se puede leer o referenciar un campo inicializado aislado."}, {"id": "2", "label": "Copiar estado parcial", "detail": "Propagar qué campos están inicializados entre asignaciones y funciones. Exige contratos adicionales y revisión de la prohibición de parámetros de salida."}], "priority": "Primera versión", "source": "Variables globales y locales; Structs"}, {"id": "init_loops", "group": "Inicialización y constantes", "title": "¿Qué análisis de inicialización aceptamos?", "why": "El compilador debe rechazar lecturas no garantizadas, aunque algunos casos complejos sí sean seguros.", "example": "i32 x; while (condicion) { x = 1; } println(x);", "options": [{"id": "1", "label": "Conservador por flujo", "detail": "Recomendado: un while/for puede ejecutar cero veces; intersectar ramas; no demostrar propiedades aritméticas complejas."}, {"id": "2", "label": "Análisis más avanzado", "detail": "Intentar probar condiciones y cantidad de iteraciones; mayor complejidad del compilador, manteniendo rechazo si no se demuestra."}], "priority": "Primera versión", "source": ""}, {"id": "const_partial", "group": "Inicialización y constantes", "title": "¿Una constante struct puede tener campos omitidos?", "why": "const exige inicializador e impide modificar campos. Un inicializador parcial dejaría campos inaccesibles para siempre.", "example": "const Persona p = Persona { edad: 20 };", "options": [{"id": "1", "label": "Exigir todos los campos", "detail": "Recomendado: constantes completas al declararse, también en tipos compuestos anidados."}, {"id": "2", "label": "Permitir campos ausentes", "detail": "Quedan permanentemente sin inicializar; leerlos siempre es error."}], "priority": "Primera versión", "source": ""}, {"id": "const_eval_errors", "group": "Inicialización y constantes", "title": "¿Qué ocurre con división por cero en una constante global?", "why": "Los inicializadores globales se evalúan al compilar, mientras que la división por cero normalmente falla al ejecutar.", "example": "const i32 x = 10 / 0;", "options": [{"id": "1", "label": "Error de compilación", "detail": "Recomendado: fallos durante evaluación constante son diagnósticos de compilación; código normal conserva error de ejecución."}, {"id": "2", "label": "Error al iniciar", "detail": "Mover el diagnóstico a la carga/inicio; obliga a revisar que las globales se calculan al compilar."}], "priority": "Primera versión", "source": ""}, {"id": "const_struct", "group": "Inicialización y constantes", "title": "¿Se admiten structs y concatenación en constantes globales?", "why": "Faltan las operaciones que el evaluador constante debe soportar; llamadas a funciones ya están excluidas.", "example": "const string s = \"A\" + \"B\";", "options": [{"id": "1", "label": "Sí, operaciones puras", "detail": "Recomendado: aritmética, lógica, comparación admitida, texto y literales de structs completos, sin referencias ni llamadas."}, {"id": "2", "label": "Solo literales sencillos", "detail": "Limitar globales a literales base y referencias a otras constantes; no concatenación ni structs globales."}], "priority": "Primera versión", "source": ""}, {"id": "name_resolution", "group": "Nombres y archivos", "title": "¿Qué nombres tienen prioridad frente a use?", "why": "Ya hay error entre imports ambiguos y ocultamiento de variables exteriores. Falta combinarlos.", "example": "use matematicas; i32 sumar(i32 a, i32 b) { ... }", "options": [{"id": "1", "label": "Local, namespace, use", "detail": "Recomendado: buscar primero ámbito local, luego namespace actual, después use; error si ese último nivel es ambiguo."}, {"id": "2", "label": "Toda colisión con use es error", "detail": "Rechazar el uso del nombre incluso si existe una declaración local o del namespace; usar ruta completa."}], "priority": "Primera versión", "source": "Namespaces y visibilidad"}, {"id": "path_resolution", "group": "Nombres y archivos", "title": "¿Desde dónde se resuelven las rutas con ::?", "why": "padre::hijo existe, pero no está definido si una ruta puede ser relativa al namespace actual.", "example": "namespace a::b { c::funcion(); }", "options": [{"id": "1", "label": "Desde la raíz", "detail": "Recomendado: toda ruta con :: parte de la raíz; los nombres simples usan el contexto actual."}, {"id": "2", "label": "Contexto y después raíz", "detail": "Buscar relativo al namespace actual y luego desde raíz; definir error si existen ambas rutas."}], "priority": "Primera versión", "source": ""}, {"id": "nested_decl", "group": "Nombres y archivos", "title": "¿Admitimos namespace dentro de otro bloque namespace?", "why": "La declaración namespace padre::hijo está aprobada; la forma anidada no está cerrada.", "example": "namespace padre { namespace hijo { ... } }", "options": [{"id": "1", "label": "Sí, equivalente", "detail": "Recomendado: equivale a namespace padre::hijo. No hereda use de otros archivos."}, {"id": "2", "label": "Solo rutas explícitas", "detail": "Exigir namespace padre::hijo y no anidar bloques físicamente."}], "priority": "Primera versión", "source": ""}, {"id": "name_spaces", "group": "Nombres y archivos", "title": "¿Tipos y funciones comparten espacio de nombres?", "why": "Sin sobrecarga, todavía puede aparecer una función con el mismo nombre que un struct o namespace.", "example": "struct Persona { ... } i32 Persona() { ... }", "options": [{"id": "1", "label": "Un único espacio por ámbito", "detail": "Recomendado: rechazar colisiones entre tipos, funciones, globales y namespaces hermanos."}, {"id": "2", "label": "Separar tipos y valores", "detail": "Permitir nombres iguales para tipos y valores; el parser deberá distinguirlos por contexto."}], "priority": "Primera versión", "source": ""}, {"id": "builtin_names", "group": "Nombres y archivos", "title": "¿Se pueden ocultar input, print, println y to_string?", "why": "Son funciones incorporadas, pero aún no hay namespace o regla de resolución para ellas.", "example": "void print(i32 numero) { ... }", "options": [{"id": "1", "label": "Reservar nombres incorporados", "detail": "Recomendado: error al redeclararlos; sin namespace estándar adicional."}, {"id": "2", "label": "Permitir ocultamiento", "detail": "Tratar incorporadas como último nivel de búsqueda y definir cómo acceder a la versión original."}], "priority": "Primera versión", "source": ""}, {"id": "struct_recursion", "group": "Structs y funciones", "title": "¿Qué structs recursivos son válidos?", "why": "Un campo del mismo tipo por valor no tiene tamaño finito; una referencia sí.", "example": "struct Nodo { Nodo siguiente; }", "options": [{"id": "1", "label": "Solo mediante referencias", "detail": "Recomendado: rechazar ciclos por valor directos e indirectos; admitir Nodo*? y verificar vida útil."}, {"id": "2", "label": "Sin structs recursivos aún", "detail": "Rechazar también campos de referencia que formen ciclos de tipos en esta versión."}], "priority": "Primera versión", "source": "Structs"}, {"id": "self_temporary", "group": "Structs y funciones", "title": "¿Puede llamarse un método self* sobre un temporal?", "why": "Las referencias a temporales están prohibidas, pero los receptores tienen sintaxis automática.", "example": "Persona::new(\"Ana\", 20).cumplir_anios();", "options": [{"id": "1", "label": "No", "detail": "Recomendado: self* exige variable o campo mutable con vida útil suficiente; self por copia sí puede usar temporales."}, {"id": "2", "label": "Sí, solo durante llamada", "detail": "Excepción temporal para el receptor, sin permitir que escape; necesita reglas especiales de préstamos."}], "priority": "Primera versión", "source": ""}, {"id": "void_end", "group": "Structs y funciones", "title": "¿Las funciones void necesitan return al final?", "why": "return; es válido y los retornos de funciones con valor están definidos; falta el final implícito de void.", "example": "void saludar() { println(\"Hola\"); }", "options": [{"id": "1", "label": "Retorno implícito", "detail": "Recomendado: llegar al final de void equivale a return;."}, {"id": "2", "label": "Siempre explícito", "detail": "Exigir return; en todos los caminos que puedan finalizar la función."}], "priority": "Primera versión", "source": ""}, {"id": "infinite_return", "group": "Structs y funciones", "title": "¿Un bucle infinito satisface una función con retorno?", "why": "Se exige retornar en todos los caminos que finalizan; un bucle infinito no finaliza.", "example": "i32 esperar() { for (;;) {} }", "options": [{"id": "1", "label": "Sí, si es evidente", "detail": "Recomendado: aceptar bucles infinitos sintácticamente demostrables sin break alcanzable; no buscar pruebas complejas."}, {"id": "2", "label": "Exigir return escrito", "detail": "Rechazar una función no void sin retorno explícito aunque no pueda terminar."}], "priority": "Primera versión", "source": ""}, {"id": "main_exit", "group": "Structs y funciones", "title": "¿Qué significa el resultado de main?", "why": "return 0 indica éxito, pero falta cómo se comunica otro i32 al entorno.", "example": "return 7;", "options": [{"id": "1", "label": "Estado de salida", "detail": "Recomendado: cero éxito; otros valores fallo. Documentar adaptación al rango del sistema operativo."}, {"id": "2", "label": "Resultado interno", "detail": "Conservar i32 como resultado de VM y mostrarlo únicamente cuando se solicite; definir por separado el estado de salida."}], "priority": "Primera versión", "source": ""}, {"id": "literals_range", "group": "Gramática y literales", "title": "¿Cómo se tratan literales fuera del rango i32?", "why": "Overflow modular de operaciones no implica necesariamente truncar un literal escrito.", "example": "i32 x = 2147483648; i32 min = -2147483648;", "options": [{"id": "1", "label": "Error salvo mínimo negativo", "detail": "Recomendado: rango estricto; aceptar -2147483648 con regla del signo unario. Las operaciones válidas siguen envolviendo."}, {"id": "2", "label": "Reducir módulo 2^32", "detail": "Todo literal decimal se reduce a 32 bits y se interpreta con signo; aceptar números arbitrariamente largos."}], "priority": "Primera versión", "source": "Identificadores, comentarios y strings; Operadores"}, {"id": "literal_formats", "group": "Gramática y literales", "title": "¿Qué formatos numéricos se permiten?", "why": "Los ejemplos solo usan decimal; no se acordaron prefijos ni separadores.", "example": "1_000; 0xFF; 0b10;", "options": [{"id": "1", "label": "Solo decimal", "detail": "Recomendado: dígitos decimales, sin prefijos ni separadores en la primera versión."}, {"id": "2", "label": "Decimal con separador", "detail": "Admitir _ entre dígitos decimales; no hexadecimal ni binario."}], "priority": "Primera versión", "source": ""}, {"id": "trailing_comma", "group": "Gramática y literales", "title": "¿Admitimos coma final?", "why": "Afecta llamadas, parámetros y literales de structs.", "example": "sumar(1, 2,); Persona { edad: 20, };", "options": [{"id": "1", "label": "Sí en listas", "detail": "Recomendado: permitir una coma final en argumentos, parámetros y campos, no elementos vacíos internos."}, {"id": "2", "label": "No", "detail": "Exigir que cada coma separe dos elementos."}], "priority": "Primera versión", "source": ""}, {"id": "struct_semicolon", "group": "Gramática y literales", "title": "¿La definición de struct termina con punto y coma?", "why": "El ejemplo actual no lo usa; conviene cerrar la gramática sin adoptar C automáticamente.", "example": "struct Persona { i32 edad; }", "options": [{"id": "1", "label": "Sin punto y coma final", "detail": "Recomendado: conservar los ejemplos; ; solo en campos y sentencias."}, {"id": "2", "label": "Con punto y coma final", "detail": "Usar struct Persona { i32 edad; }; y ajustar ejemplos."}], "priority": "Primera versión", "source": ""}, {"id": "decl_lists", "group": "Gramática y literales", "title": "¿Una declaración puede crear varias variables?", "why": "C permite listas, pero no forman parte de lo aprobado.", "example": "i32 a = 1, b = 2;", "options": [{"id": "1", "label": "Una por declaración", "detail": "Recomendado: i32 a = 1; i32 b = 2;."}, {"id": "2", "label": "Listas con mismo tipo", "detail": "Permitir comas; const debe inicializar cada elemento."}], "priority": "Primera versión", "source": ""}, {"id": "expr_statement", "group": "Gramática y literales", "title": "¿Se permite cualquier expresión como sentencia?", "why": "Una suma descartada y una llamada útil pueden tener la misma forma gramatical.", "example": "10 + 20;", "options": [{"id": "1", "label": "Solo efectos explícitos", "detail": "Recomendado: llamadas, asignaciones, incrementos y decrementos."}, {"id": "2", "label": "Cualquier expresión", "detail": "Permitir descartar el resultado de una expresión mediante ;."}], "priority": "Primera versión", "source": ""}, {"id": "source_line_end", "group": "Gramática y literales", "title": "¿Qué finales de línea y espacios se aceptan?", "why": "ASCII está acordado, pero no los caracteres de control admitidos en el código.", "example": "LF / CRLF / tabulaciones", "options": [{"id": "1", "label": "LF y CRLF", "detail": "Recomendado: espacios, tabulaciones y saltos LF o CRLF; rechazar BOM, CR aislado y controles ajenos fuera de strings."}, {"id": "2", "label": "También CR aislado", "detail": "Normalizar LF, CRLF y CR; mismas restricciones sobre controles."}], "priority": "Primera versión", "source": ""}, {"id": "string_zero", "group": "Texto y diagnóstico", "title": "¿Qué significa el escape \\0 dentro de un string?", "why": "Está aprobado, pero falta decidir si el string guarda longitud o termina en cero.", "example": "\"A\\0B\"", "options": [{"id": "1", "label": "Contenido con longitud", "detail": "Recomendado: contiene tres caracteres; \\0 no termina el string."}, {"id": "2", "label": "Terminador de texto", "detail": "El cero termina el string; implica cambiar concatenación, igualdad y salida."}], "priority": "Primera versión", "source": "Identificadores, comentarios y strings; Entrada y salida"}, {"id": "bool_to_string", "group": "Texto y diagnóstico", "title": "¿to_string admite bool además de i32?", "why": "Solo se documentó to_string(i32); print ya acepta bool.", "example": "to_string(true)", "options": [{"id": "1", "label": "Solo i32 por ahora", "detail": "Recomendado: mantener la API mínima acordada."}, {"id": "2", "label": "i32 y bool", "detail": "Devolver true o false; excepción incorporada a la regla de no sobrecarga, igual que print."}], "priority": "Primera versión", "source": ""}, {"id": "parse_input", "group": "Texto y diagnóstico", "title": "¿Necesitamos convertir input a i32?", "why": "Leer devuelve texto. Sin conversión no se pueden hacer cálculos con datos introducidos.", "example": "i32? numero = parse_i32(input_comprobado);", "options": [{"id": "1", "label": "Añadir parse_i32(string)", "detail": "Recomendado: devuelve i32?; decimal con signo opcional, sin espacios; null ante formato inválido o fuera de rango, sin overflow modular de lectura."}, {"id": "2", "label": "Posponer", "detail": "No añadir conversión de entrada numérica en esta versión."}], "priority": "Primera versión", "source": ""}, {"id": "output_failure", "group": "Texto y diagnóstico", "title": "¿Cómo se informa un fallo de print o println?", "why": "Solo input tiene fallo definido; todavía no hay excepciones ni recuperación general.", "example": "print(\"Hola\");", "options": [{"id": "1", "label": "Terminar con error controlado", "detail": "Recomendado: detener ejecución y emitir diagnóstico cuando el entorno permita informarlo."}, {"id": "2", "label": "Devolver bool", "detail": "true éxito, false fallo; revisar la firma de salida y permitir ignorar o comprobar su resultado."}], "priority": "Primera versión", "source": ""}, {"id": "diagnostics", "group": "Texto y diagnóstico", "title": "¿Qué información mínima tienen los errores?", "why": "Es una decisión observable, distinta de elegir el algoritmo del compilador.", "example": "archivo.wtz:12:8: ...", "options": [{"id": "1", "label": "Ubicación y causa", "detail": "Recomendado: archivo, línea y columna base 1 en compilación; función/ubicación fuente si está disponible al ejecutar. No fijar aún el texto literal."}, {"id": "2", "label": "Solo mensaje inicial", "detail": "Posponer ubicaciones de ejecución; mantener archivo y línea en compilación."}], "priority": "Primera versión", "source": ""}]}</script>
+    <script id="known-data" type="application/json">["C es una referencia de estilo; todo es público, sin public/private.", "Un único i32 main() en un namespace; fuentes .wtz bajo su directorio y subdirectorios.", "const obligatorio para globales; const local permitido y siempre inicializado.", "Tipos i32, bool, string y anulables T?; texto y código ASCII.", "if/else, while, for, break, continue y return; llaves obligatorias.", "Sin operaciones de bits ni ternario. & obtiene referencias; && y || son lógica.", "Overflow modular i32; división hacia cero, error al dividir por cero.", "Argumentos por copia con T, referencias con T* y llamadas con &variable.", "self recibe copia; self* permite modificar. Métodos en impl y new opcional.", "input devuelve string?; vacío \"\", fallo/EOF/no ASCII null. print no agrega salto; println sí.", "Namespaces anidados y repartidos entre archivos; use solo afecta al archivo.", "Fuera de alcance: arrays, genéricos, herencia, excepciones y memoria manual."]</script>
+    <script>
+        'use strict';
+        const spec = JSON.parse(document.getElementById('spec-data').textContent);
+        const known = JSON.parse(document.getElementById('known-data').textContent);
+        const storageKey = 'wtz-language-decisions-v1';
+        const form = document.getElementById('decisions');
+        const byId = new Map(spec.questions.map(question => [question.id, question]));
+        let draft = { schema: 'wtz-decisions', version: 1, specCommit: spec.specCommit, answers: {}, notes: '' };
+        let storageAvailable = true;
+        const node = (tag, text, className) => {
+            const element = document.createElement(tag);
+            if (text !== undefined) element.textContent = text;
+            if (className) element.className = className;
+            return element;
+        };
+
+        // Validar importaciones antes de reemplazar el borrador actual.
+        function validate(value) {
+            if (!value || value.schema !== 'wtz-decisions' || value.version !== 1 || value.specCommit !== spec.specCommit || typeof value.answers !== 'object' || !value.answers || Array.isArray(value.answers)) {
+                throw new Error('El JSON no corresponde a esta versión del formulario.');
+            }
+            const result = { schema: 'wtz-decisions', version: 1, specCommit: spec.specCommit, answers: {}, notes: '' };
+            for (const [id, answer] of Object.entries(value.answers)) {
+                const question = byId.get(id);
+                if (!question || !answer || typeof answer !== 'object') throw new Error('El JSON contiene una pregunta desconocida.');
+                const allowed = ['', 'other', 'defer', ...question.options.map(option => option.id)];
+                if (!allowed.includes(answer.choice) || typeof answer.note !== 'string' || answer.note.length > 5000) throw new Error('Una respuesta tiene un formato inválido.');
+                result.answers[id] = { choice: answer.choice, note: answer.note };
+            }
+            if (typeof value.notes !== 'string' || value.notes.length > 15000) throw new Error('Los comentarios generales son inválidos.');
+            result.notes = value.notes;
+            return result;
+        }
+
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) draft = validate(JSON.parse(saved));
+        } catch (error) {
+            storageAvailable = false;
+            document.getElementById('message').textContent = 'No se pudo recuperar un borrador. Puedes responder y exportar normalmente.';
+        }
+
+        function answerFor(id) {
+            return draft.answers[id] || { choice: '', note: '' };
+        }
+
+        function resolved(answer) {
+            return Boolean(answer.choice && answer.choice !== 'defer' && (answer.choice !== 'other' || answer.note.trim()));
+        }
+
+        function save() {
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(draft));
+                storageAvailable = true;
+            } catch (error) {
+                storageAvailable = false;
+            }
+            document.getElementById('storage').textContent = storageAvailable ? 'Borrador guardado en este navegador. No se envían datos.' : 'Almacenamiento no disponible: conserva las respuestas mediante descarga o copia.';
+        }
+
+        function render() {
+            form.replaceChildren();
+            let lastGroup = '';
+            spec.questions.forEach((question, index) => {
+                if (question.group !== lastGroup) {
+                    const heading = node('h2', question.group, 'group-title');
+                    heading.dataset.groupHeading = question.group;
+                    form.append(heading);
+                    lastGroup = question.group;
+                }
+                const field = node('fieldset');
+                field.dataset.id = question.id;
+                field.append(node('legend', `${String(index + 1).padStart(2, '0')} · ${question.title}`));
+                field.append(node('span', question.priority, 'tag'));
+                field.append(node('p', question.why));
+                const pre = node('pre');
+                pre.append(node('code', question.example));
+                field.append(pre);
+                if (question.source) field.append(node('p', `Sección revisada: ${question.source}`, 'muted'));
+                const answer = answerFor(question.id);
+                const options = [...question.options, { id: 'defer', label: 'Decidir después', detail: 'Mantener este asunto pendiente.' }, { id: 'other', label: 'Otra regla', detail: 'Describe tu decisión en el comentario de esta pregunta.' }];
+                options.forEach(option => {
+                    const label = node('label', undefined, 'option');
+                    const input = node('input');
+                    input.type = 'radio';
+                    input.name = question.id;
+                    input.value = option.id;
+                    input.checked = answer.choice === option.id;
+                    const caption = node('span');
+                    caption.append(node('strong', option.label), node('small', option.detail));
+                    label.append(input, caption);
+                    field.append(label);
+                });
+                const notesId = `${question.id}-notes`;
+                const notesLabel = node('label', 'Comentario o regla alternativa', 'notes-label');
+                notesLabel.htmlFor = notesId;
+                const notes = node('textarea');
+                notes.id = notesId;
+                notes.dataset.note = question.id;
+                notes.maxLength = 5000;
+                notes.value = answer.note;
+                notes.placeholder = 'Ejemplo, motivo o redacción que prefieras…';
+                field.append(notesLabel, notes);
+                const controls = node('div', undefined, 'question-footer');
+                const clear = node('button', 'Quitar selección');
+                clear.type = 'button';
+                clear.dataset.clear = question.id;
+                clear.setAttribute('aria-label', `Quitar selección: ${question.title}`);
+                controls.append(clear, node('span', '', 'status'));
+                field.append(controls);
+                form.append(field);
+            });
+            document.getElementById('global-notes').value = draft.notes;
+            update();
+        }
+
+        function markdown() {
+            const lines = ['# Respuestas de diseño de WTZ', '', `Especificación revisada: ${spec.specCommit}.`, 'Las respuestas siguientes son elecciones del formulario; requieren incorporación posterior a la documentación.', ''];
+            for (const question of spec.questions) {
+                const answer = answerFor(question.id);
+                const option = question.options.find(item => item.id === answer.choice);
+                const label = option ? `${option.label} — ${option.detail}` : answer.choice === 'defer' ? 'Decidir después' : answer.choice === 'other' ? 'Otra regla' : 'Sin responder';
+                lines.push(`## ${question.id}: ${question.title}`, '', label);
+                if (answer.note.trim()) lines.push('', `Comentario: ${answer.note.trim()}`);
+                lines.push('');
+            }
+            if (draft.notes.trim()) lines.push('## Comentarios generales', '', draft.notes.trim(), '');
+            return lines.join('\n');
+        }
+
+        function update() {
+            const query = document.getElementById('search').value.toLocaleLowerCase('es').trim();
+            const group = document.getElementById('group').value;
+            const state = document.getElementById('state').value;
+            let visible = 0;
+            let done = 0;
+            let deferred = 0;
+            let otherEmpty = 0;
+            spec.questions.forEach(question => {
+                const answer = answerFor(question.id);
+                if (resolved(answer)) done++;
+                if (answer.choice === 'defer') deferred++;
+                if (answer.choice === 'other' && !answer.note.trim()) otherEmpty++;
+                const text = [question.title, question.why, question.example, ...question.options.map(option => option.label + ' ' + option.detail)].join(' ').toLocaleLowerCase('es');
+                const matching = (!query || text.includes(query)) && (!group || group === question.group) && (!state || (state === 'unanswered' && !resolved(answer) && answer.choice !== 'defer') || (state === 'defer' && answer.choice === 'defer') || (state === 'answered' && resolved(answer)));
+                const field = form.querySelector(`[data-id="${question.id}"]`);
+                field.hidden = !matching;
+                field.querySelector('.status').textContent = resolved(answer) ? 'Con decisión' : answer.choice === 'defer' ? 'Aplazada' : answer.choice === 'other' ? 'Falta describir otra regla' : 'Sin responder';
+                if (matching) visible++;
+            });
+            form.querySelectorAll('[data-group-heading]').forEach(heading => {
+                heading.hidden = !spec.questions.some(question => question.group === heading.dataset.groupHeading && !form.querySelector(`[data-id="${question.id}"]`).hidden);
+            });
+            document.getElementById('progress').max = spec.questions.length;
+            document.getElementById('progress').value = done;
+            document.getElementById('count').textContent = `${done} de ${spec.questions.length} decisiones · ${deferred} aplazadas · ${spec.questions.length - done - deferred} sin resolver`;
+            document.getElementById('visible').textContent = `${visible} preguntas visibles`;
+            document.getElementById('empty').hidden = visible > 0;
+            const warnings = [];
+            if (otherEmpty) warnings.push(`${otherEmpty} respuesta(s) «Otra regla» necesitan un comentario y no cuentan como resueltas.`);
+            if (answerFor('ref_alias').choice === '2') warnings.push('Elegiste exclusividad de referencias: habrá que revisar cómo se usan las referencias compartidas al copiar structs.');
+            if (answerFor('const_eval_errors').choice === '2') warnings.push('Elegiste error al iniciar para una constante: requiere revisar la evaluación global al compilar.');
+            if (answerFor('partial_copy').choice === '2') warnings.push('Copiar structs incompletos requiere contratos de inicialización adicionales entre funciones.');
+            document.getElementById('warnings').textContent = warnings.join(' ');
+            document.getElementById('export-preview').value = markdown();
+        }
+
+        function download(filename, content, type) {
+            try {
+                const url = URL.createObjectURL(new Blob([content], { type }));
+                const link = node('a');
+                link.href = url;
+                link.download = filename;
+                document.body.append(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                document.getElementById('message').textContent = 'Descarga solicitada. Las respuestas siguen en el formulario.';
+            } catch (error) {
+                document.getElementById('message').textContent = 'No se pudo descargar. Copia o selecciona la vista previa.';
+            }
+        }
+
+        known.forEach(item => document.getElementById('known').append(node('li', item)));
+        [...new Set(spec.questions.map(question => question.group))].forEach(group => {
+            const option = node('option', group);
+            option.value = group;
+            document.getElementById('group').append(option);
+        });
+        form.addEventListener('submit', event => event.preventDefault());
+        form.addEventListener('change', event => {
+            if (event.target.type !== 'radio') return;
+            const id = event.target.name;
+            draft.answers[id] = { ...answerFor(id), choice: event.target.value };
+            save();
+            update();
+        });
+        form.addEventListener('input', event => {
+            const id = event.target.dataset.note;
+            if (!id) return;
+            draft.answers[id] = { ...answerFor(id), note: event.target.value };
+            save();
+            update();
+        });
+        form.addEventListener('click', event => {
+            const id = event.target.dataset.clear;
+            if (!id) return;
+            draft.answers[id] = { ...answerFor(id), choice: '' };
+            form.querySelectorAll(`input[name="${id}"]`).forEach(input => input.checked = false);
+            save();
+            update();
+        });
+        ['search', 'group', 'state'].forEach(id => document.getElementById(id).addEventListener('input', update));
+        document.getElementById('global-notes').addEventListener('input', event => {
+            draft.notes = event.target.value;
+            save();
+            update();
+        });
+        document.getElementById('download-md').addEventListener('click', () => download('wtz-respuestas.md', markdown(), 'text/markdown;charset=utf-8'));
+        document.getElementById('download-json').addEventListener('click', () => {
+            const data = { ...draft, exportedAt: new Date().toISOString(), decisions: spec.questions.map(question => ({ id: question.id, title: question.title, ...answerFor(question.id) })) };
+            download('wtz-respuestas.json', JSON.stringify(data, null, 4), 'application/json');
+        });
+        document.getElementById('copy').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(markdown());
+                document.getElementById('message').textContent = 'Respuestas copiadas. Puedes pegarlas en el chat.';
+            } catch (error) {
+                const preview = document.getElementById('export-preview');
+                preview.focus();
+                preview.select();
+                document.getElementById('message').textContent = 'El navegador no permitió copiar. El texto está seleccionado: usa Ctrl+C o Cmd+C.';
+            }
+        });
+        document.getElementById('import').addEventListener('change', async event => {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                if (file.size > 500000) throw new Error('El archivo excede el límite de 500 KB.');
+                const imported = validate(JSON.parse(await file.text()));
+                if (!confirm('¿Reemplazar el borrador actual por las respuestas importadas?')) return;
+                draft = imported;
+                render();
+                save();
+                document.getElementById('message').textContent = 'Respuestas importadas.';
+            } catch (error) {
+                document.getElementById('message').textContent = `No se importó: ${error.message}`;
+            } finally {
+                event.target.value = '';
+            }
+        });
+        document.getElementById('reset').addEventListener('click', () => {
+            if (!confirm('¿Borrar todas las respuestas y comentarios guardados en este navegador?')) return;
+            draft = { schema: 'wtz-decisions', version: 1, specCommit: spec.specCommit, answers: {}, notes: '' };
+            render();
+            save();
+            document.getElementById('message').textContent = 'Respuestas borradas.';
+        });
+        render();
+        document.getElementById('storage').textContent = storageAvailable ? 'Borrador local disponible. No se envían datos.' : 'Sin almacenamiento local. Descarga una copia para conservar las respuestas.';
+    </script>
+</body>
+</html>

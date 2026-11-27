@@ -676,6 +676,11 @@ memoria ni aritmética de punteros. Tampoco operaciones de bits, ternario,
 
 ## Trabajo pendiente
 
+Las decisiones adicionales se revisan en el
+[formulario de decisiones](formulario-decisiones.html), con un
+[inventario en Markdown](decisiones-pendientes.md). Sus recomendaciones no
+modifican estas reglas hasta que el usuario elija y se incorporen sus respuestas.
+
 - Escribir la gramática formal a partir de estas reglas.
 - Preparar programas completos que combinen las características acordadas.
 - Precisar reglas de tipos para comparaciones de strings, structs y referencias.

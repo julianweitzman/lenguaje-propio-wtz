@@ -3,8 +3,12 @@
 Estado: diseño inicial, sin implementación disponible para ejecutar los ejemplos.
 
 Las decisiones acordadas son una sintaxis basada en expresiones y comentarios
-con `#`. Las demás reglas de este documento son propuestas pendientes de
+con `#`, y código fuente exclusivamente ASCII. Las demás reglas de este documento son propuestas pendientes de
 confirmación.
+
+El compilador procesará el código fuente como bytes (`&[u8]`) y deberá
+rechazar cualquier byte fuera de ASCII, incluidos los comentarios y las
+cadenas. Cada carácter del código fuente ocupa un byte.
 
 ## Relación con la arquitectura
 
@@ -12,7 +16,7 @@ El código fuente se escribe en archivos `.wtz`. El compilador traducirá las
 expresiones a instrucciones para una máquina virtual basada en pila.
 
 Esta propuesta evoluciona el diseño inspirado en Assembly descrito en
-[la arquitectura inicial](docs/arquitectura.md). Los ejemplos de instrucciones
+[la arquitectura inicial](arquitectura.md). Los ejemplos de instrucciones
 de ese documento representan el enfoque anterior; todavía está pendiente
 actualizarlo para reflejar la sintaxis de expresiones.
 
@@ -48,7 +52,7 @@ PRINT "# es parte de esta cadena"
 | `INT` | Entero con signo de 64 bits | `42`, `-7` |
 | `FLOAT` | Número de punto flotante de 64 bits | `3.14`, `-0.5` |
 | `BOOL` | Valor lógico | `TRUE`, `FALSE` |
-| `STRING` | Texto Unicode entre comillas dobles | `"Hola"`, `"Hola\nWTZ"` |
+| `STRING` | Texto ASCII entre comillas dobles | `"Hola"`, `"Hola\nWTZ"` |
 
 Se propone tipado estático con inferencia: el compilador determina el tipo
 al declarar una variable y exige conservarlo en las asignaciones posteriores.
@@ -58,7 +62,7 @@ También se permite escribir el tipo explícitamente.
 LET edad = 20
 LET precio: FLOAT = 19.95
 LET activo: BOOL = TRUE
-LET nombre: STRING = "Julián"
+LET nombre: STRING = "Julian"
 ```
 
 Para cadenas se proponen los escapes `\n` (salto de línea), `\t`

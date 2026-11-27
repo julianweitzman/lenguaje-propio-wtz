@@ -14,7 +14,8 @@ y la gramática definitiva queda pendiente.
 - La inicialización será opcional en declaraciones de variables globales,
   locales y atributos. Leer un valor antes de inicializarlo será un error de
   compilación.
-- No habrá declaraciones de constantes por ahora.
+- Las declaraciones globales se escribirán con `const`; su semántica detallada
+  de inicialización y reasignación se precisará por separado.
 - Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
 - El código fuente completo, incluidos comentarios y strings, será ASCII.
 - C será únicamente una referencia de estilo para la estructura del código.
@@ -66,7 +67,9 @@ Los strings tendrán longitud variable; su representación se explica en la
 
 ## Variables globales y locales
 
-Las variables globales se declararán fuera de las funciones. Para las locales se
+Las variables globales se declararán fuera de las funciones, con la forma
+`const tipo nombre`, por ejemplo `const i32 limite = 10;`. Esta decisión
+reemplaza la ausencia inicial de `const`. Para las locales se
 propone limitarlas al bloque donde se declaren y a sus bloques interiores.
 Una variable podrá ocultar otra del mismo nombre en un ámbito exterior.
 Declarar dos variables con el mismo nombre dentro del mismo ámbito será un
@@ -75,7 +78,7 @@ globales como locales; no habrá inicialización implícita a cero.
 
 ```c
 namespace aplicacion {
-    i32 limite = 10;
+    const i32 limite = 10;
 
     i32 main() {
         i32 contador = 0;
@@ -111,7 +114,7 @@ Por ejemplo, una variable local podrá ocultar una global:
 
 ```c
 namespace aplicacion {
-    i32 valor = 10;
+    const i32 valor = 10;
 
     void ejemplo() {
         i32 valor = 20;
@@ -235,7 +238,11 @@ a bytecode se diseñará después.
 
 La siguiente tabla reúne candidatos de notación familiar. No constituye una
 adopción de los operadores ni de las reglas de C: el conjunto exacto, los tipos
-admitidos, la precedencia y la asociatividad deberán definirse para WTZ.
+admitidos y la asociatividad deberán definirse para WTZ. Las expresiones
+respetarán la jerarquía habitual de operaciones: los paréntesis agrupan,
+multiplicación/división/módulo preceden a suma/resta. Así, `2 + 3 * 4` dará
+`14`, mientras que `(2 + 3) * 4` dará `20`. La tabla completa de precedencia
+para las demás categorías queda pendiente.
 
 | Categoría | Operadores |
 | --- | --- |
@@ -247,8 +254,13 @@ admitidos, la precedencia y la asociatividad deberán definirse para WTZ.
 | Incremento y decremento | Incremento posfijo `i++` definido para los bucles; otras variantes de `++` y `--` pendientes. |
 
 La concatenación de strings con `+` es una regla propia del lenguaje.
-Los detalles de conversiones numéricas y errores aritméticos requieren una
-especificación adicional; no se promete copiar comportamientos indefinidos de C.
+El overflow quedará bajo responsabilidad del usuario, sin introducir por ahora
+un error automático por desbordamiento. El usuario indicó que el ejemplo
+`2147483647 + 1` debe dar `-1`. Esa intención queda registrada, pero la regla
+numérica general requiere aclaración: el desbordamiento modular habitual de
+un entero con signo de 32 bits produciría `-2147483648`, no `-1`. No se adopta
+silenciosamente ninguna de las dos reglas como especificación completa.
+Las conversiones y otros errores aritméticos siguen pendientes.
 
 También se propone la notación de comentarios `//` y `/* ... */`, y escapes
 como `\t`, `\\` y `\"`, restringidos a ASCII. Su conjunto completo queda
@@ -518,10 +530,17 @@ de datos. La ubicación permitida de los bloques `impl` también queda pendiente
 
 ## Entrada y salida
 
-La función incorporada `string input();` leerá una línea de la entrada estándar
-y devolverá un string ASCII sin el terminador de línea. No recibirá parámetros.
-El tratamiento de fin de entrada, errores de lectura y caracteres no ASCII
-queda pendiente.
+La función incorporada `input()` leerá una línea de la entrada estándar y
+no recibirá parámetros. En caso de éxito devolverá texto ASCII sin el terminador
+de línea; una línea vacía devolverá `""`. En caso de fallo devolverá `null`.
+El tratamiento de fin de entrada y caracteres no ASCII queda pendiente.
+
+Como el resultado puede ser un string o `null`, la firma anterior
+`string input();` debe revisarse al definir los tipos anulables. Queda pendiente
+si `null` tendrá un tipo propio o representará la ausencia de un valor mediante
+un tipo opcional. La sintaxis de anotación y comprobación aún no está aprobada.
+El ejemplo siguiente muestra la lectura, pero debe completarse con el manejo
+de `null` cuando se cierre esa sintaxis.
 
 `print(valor)` mostrará el valor sin agregar un salto de línea.
 `println(valor)` mostrará el valor y agregará un salto de línea al final.
@@ -552,7 +571,8 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 ## Decisiones pendientes
 
 - Gramática formal y restricciones de identificadores e inicializadores globales.
-- Conversiones numéricas, división, desbordamientos y desplazamientos inválidos.
+- Conversiones numéricas, división, regla exacta de overflow y desplazamientos inválidos.
+- Tipo y comprobación de `null`, firma anulable de `input` y semántica de `const`.
 - Alcance de `use` entre bloques del mismo archivo y carga de archivos.
 - Modelo de valor y referencia, posible `&`, copia y administración de memoria.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.

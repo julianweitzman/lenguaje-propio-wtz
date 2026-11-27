@@ -9,7 +9,7 @@ y la gramática definitiva queda pendiente.
 
 ## Reglas generales
 
-- Cada programa deberá definir una única función `main` dentro de un namespace
+- Cada programa deberá definir una única función `main` pública dentro de un namespace
   como punto de entrada.
 - Toda variable, global o local, deberá inicializarse al declararse.
 - No habrá declaraciones de constantes por ahora.
@@ -27,7 +27,7 @@ Los archivos fuente conservarán inicialmente la extensión `.wtz`:
 
 ```c
 namespace aplicacion {
-    i32 main() {
+    public i32 main() {
         string nombre = "Ana";
         i32 edad = 20;
         print(nombre);
@@ -73,7 +73,7 @@ incluso para una variable global; no habrá inicialización implícita a cero.
 namespace aplicacion {
     i32 limite = 10;
 
-    i32 main() {
+    public i32 main() {
         i32 contador = 0;
         while (contador < limite) {
             contador = contador + 1;
@@ -191,7 +191,7 @@ void saludar(string nombre) {
 de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 `sumar(10, 20)` o `saludar("Ana")`.
 
-La existencia de `main` dentro de un namespace es obligatoria. Se propone la firma `i32 main()`, sin
+La existencia de `main` dentro de un namespace y declarada con `public` es obligatoria. Se propone la firma `i32 main()`, sin
 parámetros, y `return 0;` para representar una terminación correcta. La firma
 definitiva, las reglas de retorno, la recursión y el paso de argumentos quedan
 pendientes; no se heredan de C.
@@ -223,7 +223,7 @@ namespace matematicas {
 }
 
 namespace aplicacion {
-    i32 main() {
+    public i32 main() {
         println(matematicas::sumar(10, 20));
         return 0;
     }
@@ -243,7 +243,7 @@ de ese namespace. No expondrá sus miembros privados.
 namespace aplicacion {
     use matematicas;
 
-    i32 main() {
+    public i32 main() {
         println(sumar(10, 20));
         return 0;
     }
@@ -257,11 +257,31 @@ Las rutas a namespaces anidados podrán expresarse con `::`, como
 `use biblioteca::matematicas;`; sus reglas de declaración quedan pendientes.
 No se fija todavía una forma de importar un único miembro.
 
-`main` deberá pertenecer a un namespace. Queda pendiente cómo se selecciona
-el namespace de entrada y si `main` necesita `public` o un tratamiento especial.
-También falta definir los conflictos de nombres introducidos por varios `use`,
-su alcance exacto y la relación entre namespaces, archivos y módulos. No se
-establece todavía cómo se descubren o cargan los archivos del programa.
+`main` deberá pertenecer a un namespace y declararse con `public`. No tendrá
+una excepción a la visibilidad privada por defecto. La selección del namespace
+de entrada sigue pendiente.
+
+### Ubicación de los archivos
+
+El directorio que contiene el archivo donde se declara `main` será la raíz del
+programa. Los archivos fuente `.wtz` deberán estar en ese directorio (`./`) o
+en sus subdirectorios (`./dir*/`), tomando siempre esa raíz como referencia,
+no el directorio desde el que se ejecute el compilador.
+
+```text
+programa/
+├── principal.wtz       (contiene main)
+├── utilidades.wtz
+└── calculo/
+    └── operaciones.wtz
+```
+
+Los archivos fuera de esa raíz no pertenecerán al conjunto de fuentes del
+programa. La ubicación física no define todavía el nombre del namespace.
+
+Quedan pendientes el procedimiento de descubrimiento y carga de los archivos,
+si un namespace puede repartirse entre varios archivos, los namespaces anidados
+y el alcance exacto y los conflictos de nombres de `use`.
 
 ## Structs
 
@@ -299,7 +319,7 @@ También se podrá insertar un salto mediante el escape `\n` dentro de un string
 
 ```c
 namespace aplicacion {
-    i32 main() {
+    public i32 main() {
         print("Nombre: ");
         string nombre = input();
         println("Hola, " + nombre);

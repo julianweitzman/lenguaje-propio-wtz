@@ -1,4 +1,23 @@
-# Decisiones pendientes de WTZ
+# Revisión de decisiones de WTZ
+
+> **Respuestas incorporadas:** el usuario respondió las 42 cuestiones y aclaró
+> algunos comentarios después. Las reglas actuales están en
+> [sintaxis-codigo-fuente.md](sintaxis-codigo-fuente.md). Las selecciones originales
+> y las aclaraciones están en [respuestas-diseno.json](respuestas-diseno.json).
+> Las alternativas de este inventario son históricas, no preguntas aún sin responder.
+
+## Detalles que todavía necesitan precisión
+
+- Identidad de structs después de copiar, pasar por valor o retornar.
+- Refinamiento de anulables tras llamadas que pueden mutarlos, con error runtime.
+- Canal de error de salida: print/println son void y no retornan null.
+- Prefijos de literales y posiciones de separadores para la gramática.
+
+El análisis de inicialización parcial, alcanzabilidad y vida útil se implementará
+conservando las reglas elegidas; no se presume un algoritmo completo ya diseñado.
+
+## Alternativas originales del formulario
+
 
 Revisión de `docs/sintaxis-codigo-fuente.md` en el commit `5f5cdd6` (2026-11-27).
 
@@ -408,4 +427,4 @@ Es una decisión observable, distinta de elegir el algoritmo del compilador.
 - Elegir estructuras internas y administración automática de memoria sin cambiar el comportamiento acordado.
 - Diseñar lexer y parser en su etapa; trasladar a bytecode más adelante.
 
-El formulario no modifica la especificación ni envía respuestas al chat. Exportar las respuestas permite revisarlas y documentarlas después.
+El formulario sigue disponible como registro de alternativas. Las respuestas recibidas ya se incorporaron; una nueva exportación no cambia automáticamente las reglas vigentes.

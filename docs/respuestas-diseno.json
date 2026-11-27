@@ -1,0 +1,371 @@
+{
+    "schema": "wtz-decisions",
+    "version": 1,
+    "specCommit": "5f5cdd6",
+    "answers": {
+        "eq_string": {
+            "choice": "1",
+            "note": ""
+        },
+        "order_string": {
+            "choice": "1",
+            "note": ""
+        },
+        "eq_struct": {
+            "choice": "other",
+            "note": "Comparación por referencia, es decir, persona == otro, falso persona == persona, verdadero"
+        },
+        "eq_ref": {
+            "choice": "1",
+            "note": ""
+        },
+        "bool_ops": {
+            "choice": "1",
+            "note": ""
+        },
+        "nullable_assign": {
+            "choice": "1",
+            "note": "Aclaración posterior: T puede asignarse a T?; lo prohibido es i32* var = 10."
+        },
+        "nullable_eq": {
+            "choice": "1",
+            "note": ""
+        },
+        "nullable_flow": {
+            "choice": "1",
+            "note": ""
+        },
+        "nullable_ref": {
+            "choice": "2",
+            "note": "Es la vercion definitiva"
+        },
+        "nullable_invalidation": {
+            "choice": "other",
+            "note": "Error en runtime si el anulable cambia por una llamada y se usa como presente; precisar integración con refinamiento estático."
+        },
+        "ref_alias": {
+            "choice": "1",
+            "note": "El usuario acepta aliasing mutable, con sus efectos bajo su responsabilidad; conserva análisis estático de vida útil elegido en ref_escape."
+        },
+        "ref_rebind": {
+            "choice": "1",
+            "note": ""
+        },
+        "ref_escape": {
+            "choice": "1",
+            "note": ""
+        },
+        "ref_const_read": {
+            "choice": "1",
+            "note": ""
+        },
+        "self_fields": {
+            "choice": "3",
+            "note": ""
+        },
+        "partial_copy": {
+            "choice": "2",
+            "note": ""
+        },
+        "init_loops": {
+            "choice": "2",
+            "note": "No se deberia poder hacer eso"
+        },
+        "const_partial": {
+            "choice": "1",
+            "note": ""
+        },
+        "const_eval_errors": {
+            "choice": "2",
+            "note": ""
+        },
+        "const_struct": {
+            "choice": "1",
+            "note": ""
+        },
+        "name_resolution": {
+            "choice": "1",
+            "note": ""
+        },
+        "path_resolution": {
+            "choice": "1",
+            "note": ""
+        },
+        "nested_decl": {
+            "choice": "1",
+            "note": ""
+        },
+        "name_spaces": {
+            "choice": "1",
+            "note": ""
+        },
+        "builtin_names": {
+            "choice": "1",
+            "note": ""
+        },
+        "struct_recursion": {
+            "choice": "1",
+            "note": ""
+        },
+        "self_temporary": {
+            "choice": "1",
+            "note": ""
+        },
+        "void_end": {
+            "choice": "1",
+            "note": ""
+        },
+        "infinite_return": {
+            "choice": "2",
+            "note": "Tampoco pasaria, el compilador deberia ser capas de comprender el control de flujo porque nunca llegaria al return Aclaración posterior: la función debe cumplir su firma siempre. Se mantiene exigencia de retorno alcanzable."
+        },
+        "main_exit": {
+            "choice": "1",
+            "note": ""
+        },
+        "literals_range": {
+            "choice": "2",
+            "note": ""
+        },
+        "literal_formats": {
+            "choice": "other",
+            "note": "Confirmados decimal, hexadecimal, octal, binario y separadores _, manteniendo i32; prefijos y posiciones se formalizarán en la gramática."
+        },
+        "trailing_comma": {
+            "choice": "2",
+            "note": ""
+        },
+        "struct_semicolon": {
+            "choice": "1",
+            "note": ""
+        },
+        "decl_lists": {
+            "choice": "1",
+            "note": ""
+        },
+        "expr_statement": {
+            "choice": "2",
+            "note": ""
+        },
+        "source_line_end": {
+            "choice": "1",
+            "note": ""
+        },
+        "string_zero": {
+            "choice": "1",
+            "note": ""
+        },
+        "bool_to_string": {
+            "choice": "2",
+            "note": "También admite null y produce \"null\"."
+        },
+        "parse_input": {
+            "choice": "1",
+            "note": ""
+        },
+        "output_failure": {
+            "choice": "other",
+            "note": "Aclaración posterior: print y println son void. No retornan null. El canal de fallo queda pendiente."
+        },
+        "diagnostics": {
+            "choice": "1",
+            "note": ""
+        }
+    },
+    "notes": "Respuestas recibidas del usuario e incorporadas con aclaraciones posteriores. No se amplía el diseño con recomendaciones no elegidas.",
+    "originalAnswers": {
+        "eq_string": {
+            "choice": "1",
+            "note": ""
+        },
+        "order_string": {
+            "choice": "1",
+            "note": ""
+        },
+        "eq_struct": {
+            "choice": "other",
+            "note": "Comparación por referencia, es decir, persona == otro, falso persona == persona, verdadero"
+        },
+        "eq_ref": {
+            "choice": "1",
+            "note": ""
+        },
+        "bool_ops": {
+            "choice": "1",
+            "note": ""
+        },
+        "nullable_assign": {
+            "choice": "other",
+            "note": "No se puede"
+        },
+        "nullable_eq": {
+            "choice": "1",
+            "note": ""
+        },
+        "nullable_flow": {
+            "choice": "1",
+            "note": ""
+        },
+        "nullable_ref": {
+            "choice": "2",
+            "note": "Es la vercion definitiva"
+        },
+        "nullable_invalidation": {
+            "choice": "",
+            "note": "Error en runtime"
+        },
+        "ref_alias": {
+            "choice": "",
+            "note": "Como en c, que explote lo que tega que explotar"
+        },
+        "ref_rebind": {
+            "choice": "1",
+            "note": ""
+        },
+        "ref_escape": {
+            "choice": "1",
+            "note": ""
+        },
+        "ref_const_read": {
+            "choice": "1",
+            "note": ""
+        },
+        "self_fields": {
+            "choice": "3",
+            "note": ""
+        },
+        "partial_copy": {
+            "choice": "2",
+            "note": ""
+        },
+        "init_loops": {
+            "choice": "2",
+            "note": "No se deberia poder hacer eso"
+        },
+        "const_partial": {
+            "choice": "1",
+            "note": ""
+        },
+        "const_eval_errors": {
+            "choice": "2",
+            "note": ""
+        },
+        "const_struct": {
+            "choice": "1",
+            "note": ""
+        },
+        "name_resolution": {
+            "choice": "1",
+            "note": ""
+        },
+        "path_resolution": {
+            "choice": "1",
+            "note": ""
+        },
+        "nested_decl": {
+            "choice": "1",
+            "note": ""
+        },
+        "name_spaces": {
+            "choice": "1",
+            "note": ""
+        },
+        "builtin_names": {
+            "choice": "1",
+            "note": ""
+        },
+        "struct_recursion": {
+            "choice": "1",
+            "note": ""
+        },
+        "self_temporary": {
+            "choice": "1",
+            "note": ""
+        },
+        "void_end": {
+            "choice": "1",
+            "note": ""
+        },
+        "infinite_return": {
+            "choice": "2",
+            "note": "Tampoco pasaria, el compilador deberia ser capas de comprender el control de flujo porque nunca llegaria al return"
+        },
+        "main_exit": {
+            "choice": "1",
+            "note": ""
+        },
+        "literals_range": {
+            "choice": "2",
+            "note": ""
+        },
+        "literal_formats": {
+            "choice": "other",
+            "note": "Todos"
+        },
+        "trailing_comma": {
+            "choice": "2",
+            "note": ""
+        },
+        "struct_semicolon": {
+            "choice": "1",
+            "note": ""
+        },
+        "decl_lists": {
+            "choice": "1",
+            "note": ""
+        },
+        "expr_statement": {
+            "choice": "2",
+            "note": ""
+        },
+        "source_line_end": {
+            "choice": "1",
+            "note": ""
+        },
+        "string_zero": {
+            "choice": "1",
+            "note": ""
+        },
+        "bool_to_string": {
+            "choice": "2",
+            "note": "y null."
+        },
+        "parse_input": {
+            "choice": "1",
+            "note": ""
+        },
+        "output_failure": {
+            "choice": "",
+            "note": "retorna null"
+        },
+        "diagnostics": {
+            "choice": "1",
+            "note": ""
+        }
+    },
+    "clarifications": [
+        {
+            "topic": "nullable_assign",
+            "user": "Si se puede, lo que no se puede es i32* var = 10"
+        },
+        {
+            "topic": "infinite_return",
+            "user": "La funcion debe cumplir su firma siempre"
+        },
+        {
+            "topic": "literal_formats",
+            "user": "si",
+            "context": "Confirmación de decimal, hexadecimal, octal, binario y separadores _, manteniendo solo i32."
+        },
+        {
+            "topic": "output_failure",
+            "user": "son funciones void"
+        }
+    ],
+    "pendingDetails": [
+        "Identidad de structs al copiar, pasar por valor y retornar.",
+        "Combinación de refinamiento estático y error runtime tras mutaciones por llamadas.",
+        "Comunicación de fallos en print/println void.",
+        "Prefijos numéricos y posiciones de separadores en la gramática."
+    ]
+}

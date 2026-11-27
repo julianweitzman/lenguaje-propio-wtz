@@ -16,7 +16,7 @@ compilador ni VM; la gramática formal y la implementación quedan pendientes.
   Leer un valor antes de inicializarlo será un error de compilación.
 - Las declaraciones globales se escribirán con `const`. Las constantes serán
   inmutables y también podrán declararse dentro de funciones.
-- Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
+- Existirán variables globales y locales, con el alcance descrito en este documento.
 - El código fuente completo, incluidos comentarios y strings, será ASCII.
 - C será únicamente una referencia de estilo para la estructura del código.
   Ninguna característica ni regla semántica se incorporará por analogía con C.
@@ -72,8 +72,28 @@ Por ejemplo, `string` no admitirá `null`, pero `string?` sí. `null` será dist
 del string vacío `""` y de una variable sin inicializar: asignar `null` inicializa
 una variable anulable, mientras que leer una variable no inicializada es un error.
 
+Se permitirá asignar `T` directamente a `T?`, por ejemplo `i32? numero = 10;`.
+Esto no permitirá asignar un entero a una referencia: `i32* referencia = 10;`
+será un error de tipos; una referencia deberá recibir una referencia compatible.
+
+La composición de tipos se limitará definitivamente a `T?`, `T*` y `T*?`, donde
+`T` sea un tipo base o un struct. No se admitirán `T?*`, referencias a referencias
+ni capas adicionales de modificadores.
+
 Antes de usar un valor anulable como su tipo base deberá comprobarse que no es
-`null`. El compilador reconocerá esa comprobación en la rama correspondiente:
+`null`. El compilador reconocerá comprobaciones en `if`/`else`, `while`,
+cortocircuito de `&&` y `||` y salidas tempranas. Una asignación que cambie el
+valor invalidará la comprobación. Si una llamada lo cambia a través de una
+referencia y se intenta usar como presente, se producirá un error en ejecución;
+no se supondrá que una comprobación anterior garantiza su valor para siempre.
+El mecanismo exacto que combina refinamiento estático y validación dinámica
+queda por precisar.
+
+```c
+i32? numero = 10;
+```
+
+Ejemplo de comprobación de entrada:
 
 ```c
 string? entrada = input();
@@ -123,9 +143,18 @@ println(valor);
 En cambio, `i32 valor; println(valor);` será un error de compilación. La regla
 también se aplicará a atributos y variables globales. Una operación que lea y
 escriba, como `contador++`, requiere un valor inicializado previamente.
-La comprobación se realizará por variable y por campo. Antes de copiar un
-valor o pasar una referencia, los datos que puedan leerse deberán estar
-inicializados. No habrá parámetros exclusivos de salida en esta versión.
+La comprobación se realizará por variable y por campo. Se permitirá copiar un
+struct incompleto y se propagará qué campos están inicializados entre
+asignaciones y funciones. Copiar un campo ausente no lo inicializará ni permitirá
+leerlo. Esto reemplaza la exigencia anterior de tener el struct completo antes
+de copiarlo o pasarlo a una función; habrá que diseñar los contratos de
+inicialización de parámetros para conservar esta información.
+
+El compilador analizará condiciones y cantidad de iteraciones cuando pueda
+demostrarlas; si no demuestra la inicialización, rechazará la lectura. Por
+ejemplo, inicializar `x` solo dentro de un bucle que puede ejecutar cero veces
+no permitirá leer `x` después del bucle. No se asume que cualquier bucle vaya
+a ejecutarse al menos una vez.
 
 `const` declarará un valor inmutable tanto en el ámbito global como dentro de
 funciones:
@@ -138,13 +167,20 @@ Toda constante deberá inicializarse en su declaración, tanto globalmente como
 dentro de funciones. `const i32 limite;` será un error de compilación. No se
 admitirá inicialización diferida ni reasignación. Tampoco se podrán modificar sus campos
 ni obtener referencias mutables hacia ella o sus campos. Una constante no podrá
-almacenar referencias mutables, tampoco dentro de sus campos.
+almacenar referencias mutables, tampoco dentro de sus campos. Una constante
+de tipo struct deberá tener todos sus campos inicializados, también los de
+structs anidados.
 
-Los inicializadores globales solo admitirán literales y expresiones calculables
-al compilar, incluidas otras constantes globales resolubles. Se rechazarán ciclos,
-llamadas a funciones y referencias a variables locales. Las constantes locales
-podrán usar expresiones evaluadas al ejecutar su declaración, incluidas llamadas
-a funciones; siempre deberán respetar el tipo declarado.
+Los inicializadores globales admitirán operaciones puras sobre literales y otras
+constantes globales: aritmética, lógica, comparaciones admitidas, concatenación
+y literales de structs completos. Se rechazarán ciclos, referencias y llamadas
+a funciones. Los errores de evaluación, incluida división por cero, se informarán
+al iniciar el programa, antes de ejecutar `main`, en lugar de producir un error
+de compilación. La evaluación anticipada no podrá ocultar ese comportamiento.
+Los errores de sintaxis y tipos seguirán siendo errores de compilación.
+
+Las constantes locales podrán usar expresiones evaluadas al ejecutar su
+declaración, incluidas llamadas a funciones, respetando el tipo declarado.
 
 Los parámetros recibirán sus valores al llamar a la función y no necesitarán
 un inicializador escrito en su declaración.
@@ -164,7 +200,8 @@ namespace aplicacion {
 
 Dentro de `ejemplo`, el nombre sin prefijo `valor` designará la variable local.
 La global conservará su valor. Las dependencias entre inicializadores globales
-se resolverán al compilar, independientemente del orden de escritura.
+se resolverán independientemente del orden de escritura. Los fallos de
+evaluación se comunicarán al iniciar el programa.
 
 ## Concatenación de strings
 
@@ -193,7 +230,10 @@ print(mensaje);
 ```
 
 El resultado será `Edad: 20`. La expresión `"Edad: " + edad` será un error
-de tipos. La conversión de otros tipos y la interpolación quedan pendientes.
+de tipos. `to_string` también admitirá `bool` y `null`: producirá `"true"`,
+`"false"` y `"null"`, respectivamente. La conversión de un anulable presente
+requerirá antes su comprobación; no se fija una conversión genérica de `T?`.
+La interpolación queda fuera de lo definido.
 La traducción de estas operaciones a bytecode se diseñará más adelante.
 
 ## Asignaciones y control de flujo
@@ -268,6 +308,12 @@ Usar `break` o `continue` fuera de un bucle será un error de compilación.
 También será un error devolver un valor desde una función `void` o usar
 `return;` en una función que deba devolver un valor. Todos los caminos que
 puedan finalizar una función con retorno deberán devolver un valor compatible.
+Además, una función con retorno deberá contener un retorno explícito alcanzable
+que cumpla su firma; un bucle infinito sin retorno no sustituirá esa obligación.
+Agregar un `return` inalcanzable después del bucle tampoco bastará. El compilador
+deberá analizar el flujo, no solo buscar la palabra `return`.
+
+En una función `void`, llegar al final del cuerpo equivaldrá a `return;`.
 
 `switch`, `do`/`while` y `goto` quedan fuera de la primera versión. Tampoco se
 incluye el operador condicional ternario. La traducción de estas estructuras
@@ -316,15 +362,50 @@ La división entera truncará hacia cero; el resto conservará el signo del divi
 Dividir o calcular módulo por cero producirá un error controlado de ejecución.
 `-2147483648 / -1` dará `-2147483648`, y su resto será cero.
 
+## Comparaciones
+
+| Tipo | Igualdad `==` y `!=` | Orden `<`, `<=`, `>` y `>=` |
+| --- | --- | --- |
+| `i32` | Por valor. | Orden numérico con signo. |
+| `bool` | Por valor. | No permitido; tampoco admite aritmética. |
+| `string` | Por contenido ASCII completo. | No permitido. |
+| Struct | Por identidad, no por igualdad de campos. | No permitido. |
+| Referencia | Por identidad del dato apuntado y tipos compatibles. | No permitido. |
+
+Para structs, `persona == persona` será verdadero y dos instancias distintas
+serán diferentes aunque sus campos coincidan. Queda por precisar la identidad
+al copiar, pasar por valor o retornar un struct; no se convierte implícitamente
+el modelo de copia en un modelo de referencias compartidas.
+
+Entre dos anulables compatibles, dos `null` serán iguales, un ausente y un
+presente serán distintos, y dos presentes usarán la igualdad de su tipo base.
+Comparar una referencia no comparará el contenido apuntado.
+
 ## Identificadores, comentarios y strings
 
 Los identificadores usarán letras ASCII, dígitos y `_`, sin comenzar con dígito.
 Se distinguirán mayúsculas de minúsculas y no se podrán usar palabras reservadas
-como nombres.
+como nombres. Se aceptarán espacios, tabulaciones y finales de línea LF o CRLF;
+se rechazarán BOM, CR aislado y controles ajenos fuera de strings.
 
 Los comentarios serán `//` hasta el final de la línea y `/* ... */`, sin
 anidamiento. Los strings ocuparán una sola línea física y admitirán los escapes
 `\n`, `\r`, `\t`, `\\`, `\"` y `\0`. Todos sus valores serán ASCII.
+Los strings conservarán su longitud: `"A\0B"` tendrá tres caracteres; el cero
+no será un terminador de texto.
+
+Los literales enteros admitirán decimal, hexadecimal, octal, binario y separadores
+`_`. El único tipo numérico seguirá siendo `i32`; no se introducen flotantes.
+Los prefijos y las posiciones válidas del separador se precisarán en la gramática.
+Los valores escritos se reducirán módulo 2^32 y se interpretarán con signo,
+incluso para literales arbitrariamente largos. Esta regla de literales es distinta
+del análisis estricto de rango de `parse_i32`.
+
+No se permitirán comas finales en argumentos, parámetros ni campos de un literal
+struct. Cada declaración de variable declarará un solo nombre. Las definiciones
+de struct terminarán con `}`, sin punto y coma adicional; sus campos sí llevarán
+`;`. Se permitirá cualquier expresión como sentencia terminada en `;`, descartando
+su resultado.
 
 ## Funciones
 
@@ -347,7 +428,9 @@ de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 `sumar(10, 20)` o `saludar("Ana")`.
 
 La firma del punto de entrada será `i32 main()`, sin parámetros, dentro de un
-namespace y sin modificador `public`. `return 0;` indicará terminación correcta.
+namespace y sin modificador `public`. `return 0;` indicará terminación correcta y otros valores indicarán fallo.
+El resultado se usará como estado de salida; su adaptación al rango del sistema
+operativo deberá documentarse para cada plataforma.
 Se permitirá recursión y llamar a funciones declaradas después, sin declaraciones
 anticipadas, incluida recursión mutua. No habrá sobrecarga, parámetros opcionales
 ni cantidad variable de argumentos. Cada llamada deberá respetar la cantidad y
@@ -388,8 +471,16 @@ cambiar_original(&valor);
 `*numero` permitirá leer o modificar el dato original. También se podrán guardar
 referencias en variables: `i32* referencia = &valor;`. No habrá aritmética de
 punteros. Las referencias a temporales y los usos que puedan sobrevivir al dato
-original serán errores de compilación. No se permitirá retornar referencias en
-la primera versión.
+original serán errores de compilación. Una referencia podrá sobrevivir al bloque
+donde se obtuvo si el dato original vive lo suficiente; se rechazará lo que no
+pueda demostrarse. No se permitirá retornar referencias ni structs que las
+contengan.
+
+Se permitirán varias referencias mutables al mismo dato. El usuario será
+responsable de sus efectos; no se impondrá exclusividad de préstamos al estilo
+de Rust. Esto no elimina las comprobaciones de vida útil acordadas. Una variable
+de referencia mutable podrá cambiar de destino mediante otra referencia
+compatible, comprobando de nuevo la vida útil.
 
 `T*` no admitirá `null`; `T*?` será una referencia anulable que requerirá una
 comprobación antes de desreferenciarse. No se podrán usar referencias para
@@ -397,13 +488,24 @@ modificar constantes ni sus campos.
 
 Copiar un struct copiará sus campos. Un campo de referencia copiará la referencia
 y compartirá el dato apuntado, sin hacer una copia profunda. Los strings conservarán
-su contenido inmutable. El algoritmo de comprobación de vida útil y la estrategia
+su contenido inmutable. No habrá referencias de solo lectura: las constantes
+se pasarán por copia. El algoritmo de comprobación de vida útil y la estrategia
 interna de administración de memoria quedan pendientes de implementación.
 
 ## Namespaces y visibilidad
 
 El lenguaje usará namespaces para organizar nombres y reducir la necesidad de
 importaciones. Se declararán con `namespace nombre { ... }`.
+
+La búsqueda de nombres simples priorizará el ámbito local, después el namespace
+actual y después los namespaces incorporados con `use`. Si hay varias
+coincidencias en ese último nivel, será un error de compilación. Las rutas con
+`::` partirán siempre de la raíz.
+
+Habrá un único espacio de nombres por ámbito: se rechazarán colisiones entre
+tipos, funciones, globales y namespaces hermanos. `input`, `print`, `println`,
+`to_string` y `parse_i32` serán nombres incorporados reservados; no se podrán
+redefinir ni ocultar.
 
 Todo será público: funciones, variables globales, tipos, atributos y métodos.
 No habrá encapsulamiento ni se necesitarán modificadores `public` o `private`.
@@ -456,7 +558,9 @@ completas seguirán disponibles aunque se utilice `use`.
 Las rutas a namespaces anidados podrán expresarse con `::`, como
 `use biblioteca::matematicas;`. Se podrán declarar con
 `namespace biblioteca::matematicas { ... }`.
-No se fija todavía una forma de importar un único miembro.
+No se fija una forma de importar un único miembro. También se admitirá
+`namespace padre { namespace hijo { ... } }`, equivalente a la ruta
+`namespace padre::hijo { ... }`.
 
 `main` deberá pertenecer a un namespace y será pública sin modificador, como
 todas las funciones. El programa deberá contener un único `main`.
@@ -535,6 +639,9 @@ struct Persona {
 ```
 
 Tipos struct, atributos y métodos serán siempre públicos sin modificadores.
+Se rechazarán ciclos de tipos por valor, directos o indirectos. La recursión de
+tipos solo podrá pasar por referencias, por ejemplo un atributo `Nodo*? siguiente`;
+seguirán vigentes las reglas de vida útil.
 
 Los structs tendrán métodos, definidos en bloques `impl` separados de la
 declaración de campos, tomando como referencia la organización de Rust. Se
@@ -557,7 +664,7 @@ Ambas variantes se invocarán con punto, como `persona.cumplir_anios()`:
 ```c
 impl Persona {
     void cumplir_anios(self*) {
-        self.edad = self.edad + 1;
+        (*self).edad = (*self).edad + 1;
     }
 }
 ```
@@ -566,7 +673,12 @@ Las funciones sin `self` se llamarán mediante el tipo. Se permitirán varios
 bloques `impl` por tipo; repetir la definición de un método será un error de
 compilación. Los bloques `impl` deberán estar en el namespace del struct, pero
 podrán repartirse entre varios archivos. Un método con `self*` no podrá llamarse
-sobre una constante.
+sobre una constante ni un temporal: exigirá una variable o campo mutable con
+vida útil suficiente. Los métodos por copia `self` podrán usar temporales.
+
+El acceso mediante referencias siempre será explícito: `(*self).campo` y
+`(*referencia).campo`. No habrá desreferencia automática para campos ni un
+operador `->`.
 
 ### Acceso y modificación de atributos
 
@@ -627,7 +739,7 @@ el nombre del tipo: `Persona { ... }`, sin la forma abreviada `{ ... }`.
 Los parámetros de structs seguirán la distinción entre copia y acceso al
 original mediante `tipo*`, según las reglas del modelo de datos.
 
-## Entrada y salida
+## Entrada, salida y diagnóstico
 
 La función incorporada `input()` leerá una línea de la entrada estándar y
 no recibirá parámetros. En caso de éxito devolverá texto ASCII sin el terminador
@@ -637,7 +749,19 @@ sin entregar texto parcial.
 
 `print` y `println` aceptarán un argumento `i32`, `bool` o `string`. Los booleanos
 se mostrarán como `true` o `false`. Los valores anulables requerirán una
-comprobación previa.
+comprobación previa. `print` y `println` serán funciones `void`: no devolverán
+un valor, tampoco `null`. Esta última aclaración sustituye el comentario anterior
+que proponía retornar `null` en fallo. Cómo comunicar los fallos de salida sin
+retorno queda pendiente de decisión.
+
+`to_string` aceptará `i32`, `bool` y `null`. Las funciones incorporadas con varios
+tipos admitidos serán una excepción a la ausencia de sobrecarga definida por
+el usuario.
+
+`i32? parse_i32(string texto)` leerá decimal con signo opcional, sin espacios.
+Devolverá `null` ante formato inválido o valor fuera del rango de `i32`; no
+aplicará reducción modular. La sintaxis interna para producir el valor presente
+respetará la asignación permitida de `T` a `T?`.
 
 La firma será `string? input()`: devolverá un string o `null`. Antes de usar
 el resultado como texto habrá que comprobar que no sea `null`.
@@ -662,6 +786,10 @@ En este ejemplo, `print` deja el cursor después de la pregunta, `input` obtiene
 el nombre y `println` termina el saludo con un salto de línea. `print("Fin\n")`
 produce el mismo texto y salto final que `println("Fin")`.
 
+Los diagnósticos de compilación incluirán archivo, línea y columna contando
+desde uno, además de la causa. Los de ejecución incluirán función y ubicación
+fuente cuando esté disponible. No se fija todavía el texto literal de los mensajes.
+
 ## Relación con el bytecode
 
 Por ahora se diseñará la sintaxis fuente y sus reglas sin fijar cómo se traducen
@@ -676,16 +804,20 @@ memoria ni aritmética de punteros. Tampoco operaciones de bits, ternario,
 
 ## Trabajo pendiente
 
-Las decisiones adicionales se revisan en el
-[formulario de decisiones](formulario-decisiones.html), con un
-[inventario en Markdown](decisiones-pendientes.md). Sus recomendaciones no
-modifican estas reglas hasta que el usuario elija y se incorporen sus respuestas.
+Las [respuestas del formulario](respuestas-diseno.json) se incorporaron a este
+documento junto con las aclaraciones posteriores del usuario. El
+[formulario original](formulario-decisiones.html) y su
+[inventario](decisiones-pendientes.md) conservan el contexto de las alternativas;
+no son reglas vigentes ni nuevas solicitudes de aprobación.
 
-- Escribir la gramática formal a partir de estas reglas.
-- Preparar programas completos que combinen las características acordadas.
-- Precisar reglas de tipos para comparaciones de strings, structs y referencias.
-- Diseñar el análisis de inicialización, constantes, anulables y vida útil.
-- Definir la administración interna de memoria sin exponer memoria manual.
+- Precisar identidad de structs después de copias, parámetros y retornos.
+- Precisar el refinamiento de anulables frente a mutaciones por llamadas y su
+  comprobación dinámica.
+- Definir cómo informan fallos las funciones de salida `void`.
+- Formalizar formatos de literales, palabras reservadas y gramática completa.
+- Diseñar análisis de inicialización parcial y contratos entre funciones,
+  alcanzabilidad, vida útil y administración interna de memoria.
+- Preparar programas completos y sus resultados esperados.
 - Abordar la traducción a bytecode después de cerrar el lenguaje fuente.
 
 Consultar la [arquitectura](arquitectura.md) para las responsabilidades de cada etapa.

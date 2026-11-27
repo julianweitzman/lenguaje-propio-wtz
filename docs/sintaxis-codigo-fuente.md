@@ -283,7 +283,8 @@ funciones. Tampoco se incorporan por ahora modificadores como `ref` u `out`.
 El lenguaje usará namespaces para organizar nombres y reducir la necesidad de
 importaciones. Se declararán con `namespace nombre { ... }`.
 
-Los miembros de un namespace serán privados por defecto. Para exponerlos a
+Los miembros de un namespace serán privados por defecto. Esta regla no se
+aplica a los atributos de structs, que serán siempre públicos. Para exponerlos a
 otros namespaces se escribirá `public` antes de la declaración. Una ruta
 completa respetará las mismas restricciones de visibilidad.
 
@@ -391,6 +392,11 @@ struct Persona {
 }
 ```
 
+Los atributos (campos) de un struct serán siempre públicos, sin necesidad de
+escribir `public` en cada declaración. No habrá atributos privados. Esta regla
+no hace público automáticamente al tipo struct ni define la visibilidad de sus
+métodos; la visibilidad pública tampoco determina si un atributo es mutable.
+
 Los structs tendrán métodos, definidos en bloques `impl` separados de la
 declaración de campos, tomando como referencia la organización de Rust. Se
 mantendrá la notación de funciones de WTZ, con el tipo de retorno antes del
@@ -425,7 +431,7 @@ concluir que leer un campo sin inicializar sea válido.
 
 También quedan pendientes:
 
-- Acceso y modificación de campos y visibilidad de campos y métodos.
+- Sintaxis de acceso y modificación de campos y visibilidad de métodos.
 - Sintaxis del receptor y llamadas a métodos de instancia.
 - Asignación, copia y paso de structs a funciones, junto con el modelo de datos.
 - Ubicación y cantidad de bloques `impl` para un mismo tipo.
@@ -474,7 +480,7 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 - Firma y selección de `main`, recursión y paso de argumentos.
 - Alcance de `use`, namespaces anidados y organización de módulos y archivos.
 - Modelo de tipos de valor y referencia, copia y administración de memoria.
-- Aplicación detallada de visibilidad a structs y sus campos.
+- Aplicación detallada de visibilidad a tipos struct y sus métodos; los atributos son públicos.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
 - Reglas de `new`, campos no inicializados, receptores de métodos y bloques `impl`.
 - Acceso a campos, mutabilidad y copia de structs.

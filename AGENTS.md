@@ -40,3 +40,9 @@ Usar ramas por tarea y commits concretos; por ejemplo, `docs/guia-colaboracion` 
 ## Arquitectura
 
 Consultar `docs/arquitectura.md` antes de modificar el lenguaje o bytecode. Documentar opcodes, tamaños de operandos, orden de bytes y errores. Separar compilación y ejecución; el diseño contempla instrucciones intermedias de pila con una vista textual y codificación binaria.
+
+## Flujo acordado con el usuario
+
+Registrar en la documentación las decisiones de diseño que indique el usuario.
+Después de cada actualización, verificar los cambios, crear un commit y hacer
+push de la rama de trabajo. Preferencia indicada el 2026-11-27.

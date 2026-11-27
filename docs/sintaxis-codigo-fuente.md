@@ -9,7 +9,8 @@ y la gramática definitiva queda pendiente.
 
 ## Reglas generales
 
-- Cada programa deberá definir una única función `main` como punto de entrada.
+- Cada programa deberá definir una única función `main` dentro de un namespace
+  como punto de entrada.
 - Toda variable, global o local, deberá inicializarse al declararse.
 - No habrá declaraciones de constantes por ahora.
 - Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
@@ -25,12 +26,14 @@ ASCII se aplica a los programas y a sus datos de texto.
 Los archivos fuente conservarán inicialmente la extensión `.wtz`:
 
 ```c
-i32 main() {
-    string nombre = "Ana";
-    i32 edad = 20;
-    print(nombre);
-    print(edad + 1);
-    return 0;
+namespace aplicacion {
+    i32 main() {
+        string nombre = "Ana";
+        i32 edad = 20;
+        print(nombre);
+        print(edad + 1);
+        return 0;
+    }
 }
 ```
 
@@ -67,14 +70,16 @@ Las reglas de ocultamiento y nombres repetidos quedan pendientes. Una declaraci�
 incluso para una variable global; no habrá inicialización implícita a cero.
 
 ```c
-i32 limite = 10;
+namespace aplicacion {
+    i32 limite = 10;
 
-i32 main() {
-    i32 contador = 0;
-    while (contador < limite) {
-        contador = contador + 1;
+    i32 main() {
+        i32 contador = 0;
+        while (contador < limite) {
+            contador = contador + 1;
+        }
+        return 0;
     }
-    return 0;
 }
 ```
 
@@ -186,16 +191,77 @@ void saludar(string nombre) {
 de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 `sumar(10, 20)` o `saludar("Ana")`.
 
-La existencia de `main` es obligatoria. Se propone la firma `i32 main()`, sin
+La existencia de `main` dentro de un namespace es obligatoria. Se propone la firma `i32 main()`, sin
 parámetros, y `return 0;` para representar una terminación correcta. La firma
 definitiva, las reglas de retorno, la recursión y el paso de argumentos quedan
 pendientes; no se heredan de C.
 
 Los fragmentos de sentencias de este documento deberán colocarse dentro de una
-función para formar un programa. En el nivel superior se declararán variables
-globales y funciones; se propone agregar definiciones de structs. El uso de
+función para formar un programa. Los namespaces agruparán las declaraciones de variables globales y funciones;
+se propone agregar definiciones de structs dentro de ellos. El uso de
 `return;` en funciones `void` queda pendiente de cerrar junto con las reglas
 de retorno.
+
+## Namespaces y visibilidad
+
+El lenguaje usará namespaces para organizar nombres y reducir la necesidad de
+importaciones. Se declararán con `namespace nombre { ... }`.
+
+Los miembros de un namespace serán privados por defecto. Para exponerlos a
+otros namespaces se escribirá `public` antes de la declaración. Una ruta
+completa respetará las mismas restricciones de visibilidad.
+
+```c
+namespace matematicas {
+    public i32 sumar(i32 a, i32 b) {
+        return a + b;
+    }
+
+    i32 auxiliar(i32 valor) {
+        return valor + 1;
+    }
+}
+
+namespace aplicacion {
+    i32 main() {
+        println(matematicas::sumar(10, 20));
+        return 0;
+    }
+}
+```
+
+`matematicas::sumar(...)` estará disponible sin `use`. La función `auxiliar`
+será privada a `matematicas` y no podrá usarse desde `aplicacion`, tampoco
+mediante una ruta completa.
+
+### Uso de un namespace
+
+`use matematicas;` permitirá acceder sin prefijo a todos los miembros públicos
+de ese namespace. No expondrá sus miembros privados.
+
+```c
+namespace aplicacion {
+    use matematicas;
+
+    i32 main() {
+        println(sumar(10, 20));
+        return 0;
+    }
+}
+```
+
+Este ejemplo usa el namespace `matematicas` definido anteriormente. Las rutas
+completas seguirán disponibles aunque se utilice `use`.
+
+Las rutas a namespaces anidados podrán expresarse con `::`, como
+`use biblioteca::matematicas;`; sus reglas de declaración quedan pendientes.
+No se fija todavía una forma de importar un único miembro.
+
+`main` deberá pertenecer a un namespace. Queda pendiente cómo se selecciona
+el namespace de entrada y si `main` necesita `public` o un tratamiento especial.
+También falta definir los conflictos de nombres introducidos por varios `use`,
+su alcance exacto y la relación entre namespaces, archivos y módulos. No se
+establece todavía cómo se descubren o cargan los archivos del programa.
 
 ## Structs
 
@@ -232,12 +298,14 @@ queda pendiente.
 También se podrá insertar un salto mediante el escape `\n` dentro de un string.
 
 ```c
-i32 main() {
-    print("Nombre: ");
-    string nombre = input();
-    println("Hola, " + nombre);
-    print("Fin\n");
-    return 0;
+namespace aplicacion {
+    i32 main() {
+        print("Nombre: ");
+        string nombre = input();
+        println("Hola, " + nombre);
+        print("Fin\n");
+        return 0;
+    }
 }
 ```
 
@@ -255,7 +323,9 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 
 - Gramática formal y restricciones de identificadores e inicializadores globales.
 - Conversiones numéricas, división, desbordamientos y desplazamientos inválidos.
-- Firma de `main`, retornos, recursión, paso de argumentos y visibilidad de funciones.
+- Firma y selección de `main`, retornos, recursión y paso de argumentos.
+- Alcance y conflictos de `use`, namespaces anidados y organización de módulos y archivos.
+- Aplicación detallada de visibilidad a structs y sus campos.
 - Inclusión de otras estructuras de control y reglas completas de operadores.
 - Creación, acceso a campos, mutabilidad, copia e inicialización de structs.
 - Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.

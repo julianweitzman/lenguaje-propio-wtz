@@ -11,8 +11,9 @@ y la gramática definitiva queda pendiente.
 
 - Cada programa deberá definir una única función `main` pública dentro de un namespace
   como punto de entrada.
-- Toda variable, global o local, deberá inicializarse al declararse. Los campos
-  de structs no exigirán inicializadores en su declaración.
+- La inicialización será opcional en declaraciones de variables globales,
+  locales y atributos. Leer un valor antes de inicializarlo será un error de
+  compilación.
 - No habrá declaraciones de constantes por ahora.
 - Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
 - El código fuente completo, incluidos comentarios y strings, será ASCII.
@@ -69,8 +70,8 @@ Las variables globales se declararán fuera de las funciones. Para las locales s
 propone limitarlas al bloque donde se declaren y a sus bloques interiores.
 Una variable podrá ocultar otra del mismo nombre en un ámbito exterior.
 Declarar dos variables con el mismo nombre dentro del mismo ámbito será un
-error de compilación. Una declaración sin inicializador será un error,
-incluso para una variable global; no habrá inicialización implícita a cero.
+error de compilación. Se admitirán declaraciones sin inicializador tanto
+globales como locales; no habrá inicialización implícita a cero.
 
 ```c
 namespace aplicacion {
@@ -85,6 +86,22 @@ namespace aplicacion {
     }
 }
 ```
+
+La asignación deberá preceder a cualquier lectura. El compilador deberá
+comprobar que el valor esté inicializado en todos los caminos que lleguen a
+una lectura; una asignación en una sola rama no será suficiente.
+
+```c
+i32 valor;
+valor = 10;
+println(valor);
+```
+
+En cambio, `i32 valor; println(valor);` será un error de compilación. La regla
+también se aplicará a atributos y variables globales. Una operación que lea y
+escriba, como `contador++`, requiere un valor inicializado previamente.
+Los detalles del análisis entre funciones quedan pendientes, sin cambiar la
+prohibición de leer valores no inicializados.
 
 Los parámetros recibirán sus valores al llamar a la función y no necesitarán
 un inicializador escrito en la declaración. Las restricciones de los
@@ -414,20 +431,45 @@ Los métodos usarán declaraciones con la forma `tipo_retorno nombre(parametros)
 y cuerpos entre llaves. La sintaxis del receptor de instancia y cómo se accede
 a sus campos todavía deben definirse.
 
-Para crear un valor se utilizará una llamada asociada al tipo, `Tipo::new()`:
+### Creación mediante `new`
+
+`new` se escribirá explícitamente dentro de un bloque `impl`, podrá recibir
+argumentos y devolverá un valor del struct. No se generará automáticamente.
+La llamada usará `Tipo::new(argumentos)`:
 
 ```c
-Persona persona = Persona::new();
+impl Persona {
+    public Persona new(string nombre, i32 edad) {
+        return Persona { nombre: nombre, edad: edad };
+    }
+}
 ```
 
-No se exigirá una lista de inicialización de todos los campos en el lugar de
-creación. Esta regla reemplaza la propuesta de construcción mediante
-`Persona { nombre: "Ana", edad: 20 }`.
+```c
+Persona persona = Persona::new("Ana", 20);
+```
 
-Queda pendiente definir si `new` se genera automáticamente o debe escribirse
-en un bloque `impl`, si admite parámetros y qué valores o estado tienen los
-campos no inicializados. No se asumen valores predeterminados ni se permite
-concluir que leer un campo sin inicializar sea válido.
+El ejemplo muestra una función asociada al tipo; no necesita un receptor de
+instancia. Se usa `public` para que `new` pueda invocarse desde otro namespace;
+las reglas generales de visibilidad de métodos siguen pendientes.
+
+### Creación mediante campos nombrados
+
+También se podrá construir un valor directamente con la forma
+`Tipo { campo: valor }`, sin pasar por `new`:
+
+```c
+Persona persona = Persona { nombre: "Ana", edad: 20 };
+```
+
+La inicialización de todos los campos no será obligatoria. Los campos omitidos
+quedarán sin inicializar y cualquier lectura de ellos será un error de compilación.
+No se les asignarán valores predeterminados de forma implícita.
+
+Esta alternativa sustituye la restricción anterior que solo permitía crear
+structs mediante `new`. El tipo se muestra explícitamente en los ejemplos;
+la posibilidad de escribir únicamente `{ campo: valor }` cuando se conoce el
+tipo por contexto queda pendiente de precisar.
 
 También quedan pendientes:
 
@@ -435,10 +477,8 @@ También quedan pendientes:
 - Sintaxis del receptor y llamadas a métodos de instancia.
 - Asignación, copia y paso de structs a funciones, junto con el modelo de datos.
 - Ubicación y cantidad de bloques `impl` para un mismo tipo.
-
-La excepción de inicialización se refiere aquí a los campos de structs; la regla
-de inicialización de variables globales y locales se conserva hasta aclarar si
-el cambio también debe aplicarse a ellas.
+- Reglas detalladas para campos repetidos, inexistentes y tipos incompatibles
+  en la construcción por campos nombrados.
 
 ## Entrada y salida
 
@@ -482,7 +522,8 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 - Modelo de tipos de valor y referencia, copia y administración de memoria.
 - Aplicación detallada de visibilidad a tipos struct y sus métodos; los atributos son públicos.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
-- Reglas de `new`, campos no inicializados, receptores de métodos y bloques `impl`.
+- Análisis de inicialización entre funciones, receptores de métodos y bloques `impl`.
+- Reglas detalladas de construcción mediante campos nombrados.
 - Acceso a campos, mutabilidad y copia de structs.
 - Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.
 - Fin de entrada, errores de lectura, entrada no ASCII y formato de valores en la salida.

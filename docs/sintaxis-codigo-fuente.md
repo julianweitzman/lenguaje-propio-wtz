@@ -9,7 +9,7 @@ y la gramática definitiva queda pendiente.
 
 ## Reglas generales
 
-- Cada programa deberá definir una única función `main` pública dentro de un namespace
+- Cada programa deberá definir una única función `main` dentro de un namespace
   como punto de entrada.
 - La inicialización será opcional en declaraciones de variables globales,
   locales y atributos. Leer un valor antes de inicializarlo será un error de
@@ -29,7 +29,7 @@ Los archivos fuente conservarán inicialmente la extensión `.wtz`:
 
 ```c
 namespace aplicacion {
-    public i32 main() {
+    i32 main() {
         string nombre = "Ana";
         i32 edad = 20;
         print(nombre);
@@ -77,7 +77,7 @@ globales como locales; no habrá inicialización implícita a cero.
 namespace aplicacion {
     i32 limite = 10;
 
-    public i32 main() {
+    i32 main() {
         i32 contador = 0;
         while (contador < limite) {
             contador = contador + 1;
@@ -274,10 +274,10 @@ void saludar(string nombre) {
 de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 `sumar(10, 20)` o `saludar("Ana")`.
 
-La existencia de `main` dentro de un namespace y declarada con `public` es obligatoria. Se propone la firma `i32 main()`, sin
-parámetros, y `return 0;` para representar una terminación correcta. La firma
-definitiva, la recursión y el paso de argumentos quedan pendientes; no se
-heredan de C. Las reglas de retorno se describen en el control de flujo.
+La firma del punto de entrada será `i32 main()`, sin parámetros, dentro de un
+namespace y sin modificador `public`. `return 0;` indicará terminación correcta.
+Se permitirá recursión y llamar a funciones declaradas después, sin declaraciones
+anticipadas. El paso de argumentos queda pendiente del modelo de datos.
 
 Los fragmentos de sentencias de este documento deberán colocarse dentro de una
 función para formar un programa. Los namespaces agruparán las declaraciones de variables globales y funciones;
@@ -287,7 +287,8 @@ se propone agregar definiciones de structs dentro de ellos.
 
 La asignación, la copia y el paso de argumentos se definirán cuando se diseñe
 cómo maneja los datos el programa. Como orientación inicial se considera un
-modelo parecido al de C#, con tipos de valor y tipos de referencia. Esta es
+modelo con tipos de valor y tipos de referencia, posiblemente mediante `&`.
+Su funcionamiento se analizará después. Esta es
 una propuesta de diseño, no la adopción de sus reglas.
 
 Todavía no se decide qué tipos pertenecerán a cada categoría, cuándo se copiará
@@ -300,14 +301,13 @@ funciones. Tampoco se incorporan por ahora modificadores como `ref` u `out`.
 El lenguaje usará namespaces para organizar nombres y reducir la necesidad de
 importaciones. Se declararán con `namespace nombre { ... }`.
 
-Los miembros de un namespace serán privados por defecto. Esta regla no se
-aplica a los atributos de structs, que serán siempre públicos. Para exponerlos a
-otros namespaces se escribirá `public` antes de la declaración. Una ruta
-completa respetará las mismas restricciones de visibilidad.
+Todo será público: funciones, variables globales, tipos, atributos y métodos.
+No habrá encapsulamiento ni se necesitarán modificadores `public` o `private`.
+Esta decisión sustituye la visibilidad privada por defecto.
 
 ```c
 namespace matematicas {
-    public i32 sumar(i32 a, i32 b) {
+    i32 sumar(i32 a, i32 b) {
         return a + b;
     }
 
@@ -317,27 +317,27 @@ namespace matematicas {
 }
 
 namespace aplicacion {
-    public i32 main() {
+    i32 main() {
         println(matematicas::sumar(10, 20));
         return 0;
     }
 }
 ```
 
-`matematicas::sumar(...)` estará disponible sin `use`. La función `auxiliar`
-será privada a `matematicas` y no podrá usarse desde `aplicacion`, tampoco
-mediante una ruta completa.
+Las funciones `sumar` y `auxiliar` serán accesibles desde otros namespaces
+mediante sus rutas completas, sin `use`.
 
 ### Uso de un namespace
 
 `use matematicas;` permitirá acceder sin prefijo a todos los miembros públicos
-de ese namespace. No expondrá sus miembros privados.
+de ese namespace. Su efecto se limitará al archivo donde se escriba y no se
+propagará a otros archivos del mismo namespace.
 
 ```c
 namespace aplicacion {
     use matematicas;
 
-    public i32 main() {
+    i32 main() {
         println(sumar(10, 20));
         return 0;
     }
@@ -352,9 +352,8 @@ Las rutas a namespaces anidados podrán expresarse con `::`, como
 `namespace biblioteca::matematicas { ... }`.
 No se fija todavía una forma de importar un único miembro.
 
-`main` deberá pertenecer a un namespace y declararse con `public`. No tendrá
-una excepción a la visibilidad privada por defecto. La selección del namespace
-de entrada sigue pendiente.
+`main` deberá pertenecer a un namespace y será pública sin modificador, como
+todas las funciones. El programa deberá contener un único `main`.
 
 ### Ubicación de los archivos
 
@@ -383,7 +382,7 @@ namespace aplicacion {
     use matematicas;
     use estadisticas;
 
-    public i32 main() {
+    i32 main() {
         println(matematicas::sumar(1, 2));
         return 0;
     }
@@ -402,7 +401,7 @@ Se admitirán namespaces anidados y su declaración mediante rutas:
 
 ```c
 namespace biblioteca::matematicas {
-    public i32 sumar(i32 a, i32 b) {
+    i32 sumar(i32 a, i32 b) {
         return a + b;
     }
 }
@@ -412,9 +411,8 @@ La ruta de acceso será `biblioteca::matematicas::sumar(1, 2)` y se podrá escri
 `use biblioteca::matematicas;` para acceder a sus miembros públicos sin prefijo.
 La jerarquía de namespaces no tendrá que coincidir con los directorios.
 
-Quedan pendientes el procedimiento de descubrimiento y carga de los archivos,
-el alcance exacto de `use` y las reglas de acceso privado entre namespaces
-padre e hijo.
+El procedimiento de descubrimiento y carga de archivos sigue pendiente.
+No habrá restricciones de visibilidad entre namespaces padre e hijo.
 
 ## Structs
 
@@ -428,10 +426,7 @@ struct Persona {
 }
 ```
 
-Los atributos (campos) de un struct serán siempre públicos, sin necesidad de
-escribir `public` en cada declaración. No habrá atributos privados. Esta regla
-no hace público automáticamente al tipo struct ni define la visibilidad de sus
-métodos; la visibilidad pública tampoco determina si un atributo es mutable.
+Tipos struct, atributos y métodos serán siempre públicos sin modificadores.
 
 Los structs tendrán métodos, definidos en bloques `impl` separados de la
 declaración de campos, tomando como referencia la organización de Rust. Se
@@ -447,8 +442,20 @@ impl Persona {
 ```
 
 Los métodos usarán declaraciones con la forma `tipo_retorno nombre(parametros)`
-y cuerpos entre llaves. La sintaxis del receptor de instancia todavía debe
-definirse; no se adopta automáticamente el sistema de préstamos de Rust.
+y cuerpos entre llaves. Los métodos de instancia usarán `self` como primer
+parámetro explícito y se invocarán con `persona.cumplir_anios()`:
+
+```c
+impl Persona {
+    void cumplir_anios(self) {
+        self.edad = self.edad + 1;
+    }
+}
+```
+
+Las funciones sin `self` se llamarán mediante el tipo. Se permitirán varios
+bloques `impl` por tipo; repetir la definición de un método será un error de
+compilación. La semántica de copia o referencia de `self` se analizará después.
 
 ### Acceso y modificación de atributos
 
@@ -475,7 +482,7 @@ podrá recibir argumentos y se llamará con `Tipo::new(argumentos)`:
 
 ```c
 impl Persona {
-    public Persona new(string nombre, i32 edad) {
+    Persona new(string nombre, i32 edad) {
         return Persona { nombre: nombre, edad: edad };
     }
 }
@@ -485,10 +492,9 @@ impl Persona {
 Persona persona = Persona::new("Ana", 20);
 ```
 
-El ejemplo muestra una función asociada al tipo; no necesita un receptor de
-instancia. Se usa `public` para que `new` pueda invocarse desde otro namespace;
-las reglas generales de visibilidad de métodos siguen pendientes. Se podrá
-usar otro nombre, como `crear`, y llamarlo mediante `Persona::crear(...)`.
+El ejemplo muestra una función asociada al tipo, sin receptor de instancia.
+Será pública como todas las funciones. También podrá llamarse `crear` u otro
+nombre, con llamadas como `Persona::crear(...)`.
 
 ### Creación mediante campos nombrados
 
@@ -503,19 +509,12 @@ La inicialización de todos los campos no será obligatoria. Los campos omitidos
 quedarán sin inicializar y cualquier lectura de ellos será un error de compilación.
 No se les asignarán valores predeterminados de forma implícita.
 
-Esta alternativa sustituye la restricción anterior que solo permitía crear
-structs mediante `new`. El tipo se muestra explícitamente en los ejemplos;
-la posibilidad de escribir únicamente `{ campo: valor }` cuando se conoce el
-tipo por contexto queda pendiente de precisar.
+El orden de los campos no importará. Repetir un campo, nombrar uno inexistente
+o asignarle un valor incompatible será un error de compilación. Se exigirá
+el nombre del tipo: `Persona { ... }`, sin la forma abreviada `{ ... }`.
 
-También quedan pendientes:
-
-- Visibilidad de métodos.
-- Sintaxis del receptor y llamadas a métodos de instancia.
-- Asignación, copia y paso de structs a funciones, junto con el modelo de datos.
-- Ubicación y cantidad de bloques `impl` para un mismo tipo.
-- Reglas detalladas para campos repetidos, inexistentes y tipos incompatibles
-  en la construcción por campos nombrados.
+La asignación, copia y paso de structs a funciones quedan pendientes del modelo
+de datos. La ubicación permitida de los bloques `impl` también queda pendiente.
 
 ## Entrada y salida
 
@@ -530,7 +529,7 @@ También se podrá insertar un salto mediante el escape `\n` dentro de un string
 
 ```c
 namespace aplicacion {
-    public i32 main() {
+    i32 main() {
         print("Nombre: ");
         string nombre = input();
         println("Hola, " + nombre);
@@ -554,14 +553,11 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 
 - Gramática formal y restricciones de identificadores e inicializadores globales.
 - Conversiones numéricas, división, desbordamientos y desplazamientos inválidos.
-- Firma y selección de `main`, recursión y paso de argumentos.
-- Alcance de `use`, acceso privado entre namespaces padre e hijo y carga de archivos.
-- Modelo de tipos de valor y referencia, copia y administración de memoria.
-- Aplicación detallada de visibilidad a tipos struct y sus métodos; los atributos son públicos.
+- Alcance de `use` entre bloques del mismo archivo y carga de archivos.
+- Modelo de valor y referencia, posible `&`, copia y administración de memoria.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
-- Análisis de inicialización entre funciones, receptores de métodos y bloques `impl`.
-- Reglas detalladas de construcción mediante campos nombrados.
-- Copia de structs, junto con el modelo de datos.
+- Análisis de inicialización entre funciones y semántica de `self`.
+- Ubicación permitida de los bloques `impl`.
 - Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.
 - Fin de entrada, errores de lectura, entrada no ASCII y formato de valores en la salida.
 - Traducción a bytecode, que se abordará después de la sintaxis fuente.

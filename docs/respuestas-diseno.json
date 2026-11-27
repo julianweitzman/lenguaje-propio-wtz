@@ -13,7 +13,7 @@
         },
         "eq_struct": {
             "choice": "other",
-            "note": "Comparación por referencia, es decir, persona == otro, falso persona == persona, verdadero"
+            "note": "Comparación por referencia, es decir, persona == otro, falso persona == persona, verdadero Resolución delegada: Identidad propia por instancia. Copia inicial, argumento por valor y resultado materializado crean una identidad propia; asignar a una instancia existente conserva la identidad destino. Comparar no introduce copias."
         },
         "eq_ref": {
             "choice": "1",
@@ -41,7 +41,7 @@
         },
         "nullable_invalidation": {
             "choice": "other",
-            "note": "Error en runtime si el anulable cambia por una llamada y se usa como presente; precisar integración con refinamiento estático."
+            "note": "Error en runtime si el anulable cambia por una llamada y se usa como presente; precisar integración con refinamiento estático. Resolución delegada: Una prueba de presencia permite uso en el camino refinado. Tras posible mutación por llamada, cada uso valida el valor leído una vez; null termina con error controlado. Asignación directa invalida prueba estática y exige recomprobar."
         },
         "ref_alias": {
             "choice": "1",
@@ -165,7 +165,7 @@
         },
         "output_failure": {
             "choice": "other",
-            "note": "Aclaración posterior: print y println son void. No retornan null. El canal de fallo queda pendiente."
+            "note": "Aclaración posterior: print y println son void. No retornan null. El canal de fallo queda pendiente. Resolución delegada: print/println son void. Fallo de escritura termina con error controlado y estado no cero; diagnóstico por stderr cuando sea posible, sin recuperación ni valor de retorno."
         },
         "diagnostics": {
             "choice": "1",
@@ -363,9 +363,23 @@
         }
     ],
     "pendingDetails": [
-        "Identidad de structs al copiar, pasar por valor y retornar.",
-        "Combinación de refinamiento estático y error runtime tras mutaciones por llamadas.",
-        "Comunicación de fallos en print/println void.",
         "Prefijos numéricos y posiciones de separadores en la gramática."
-    ]
+    ],
+    "delegatedResolutions": {
+        "authorization": "El usuario pidió decidir los tres puntos restantes según criterio técnico.",
+        "resolutions": [
+            {
+                "topic": "eq_struct",
+                "decision": "Identidad propia por instancia. Copia inicial, argumento por valor y resultado materializado crean una identidad propia; asignar a una instancia existente conserva la identidad destino. Comparar no introduce copias."
+            },
+            {
+                "topic": "nullable_invalidation",
+                "decision": "Una prueba de presencia permite uso en el camino refinado. Tras posible mutación por llamada, cada uso valida el valor leído una vez; null termina con error controlado. Asignación directa invalida prueba estática y exige recomprobar."
+            },
+            {
+                "topic": "output_failure",
+                "decision": "print/println son void. Fallo de escritura termina con error controlado y estado no cero; diagnóstico por stderr cuando sea posible, sin recuperación ni valor de retorno."
+            }
+        ]
+    }
 }

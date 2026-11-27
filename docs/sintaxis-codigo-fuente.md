@@ -86,8 +86,17 @@ cortocircuito de `&&` y `||` y salidas tempranas. Una asignación que cambie el
 valor invalidará la comprobación. Si una llamada lo cambia a través de una
 referencia y se intenta usar como presente, se producirá un error en ejecución;
 no se supondrá que una comprobación anterior garantiza su valor para siempre.
-El mecanismo exacto que combina refinamiento estático y validación dinámica
-queda por precisar.
+Una comprobación reconocida habilitará el uso del valor como su tipo base en
+el camino correspondiente. Si una llamada puede mutarlo indirectamente, ese
+uso seguirá admitiéndose, pero comprobará en ejecución que el valor leído siga
+presente. Si es `null`, la ejecución terminará con un diagnóstico; no se
+convertirá en un valor predeterminado ni se desreferenciará como si existiera.
+Una asignación directa invalidará la prueba estática y exigirá otra comprobación.
+
+Cada uso leerá y validará el valor una sola vez antes de consumirlo. Copiar un
+valor ya comprobado a una variable no anulable conservará esa copia aunque
+cambie el origen. El compilador solo podrá eliminar una comprobación dinámica
+si demuestra que no cambia este comportamiento.
 
 ```c
 i32? numero = 10;
@@ -372,10 +381,27 @@ Dividir o calcular módulo por cero producirá un error controlado de ejecución
 | Struct | Por identidad, no por igualdad de campos. | No permitido. |
 | Referencia | Por identidad del dato apuntado y tipos compatibles. | No permitido. |
 
-Para structs, `persona == persona` será verdadero y dos instancias distintas
-serán diferentes aunque sus campos coincidan. Queda por precisar la identidad
-al copiar, pasar por valor o retornar un struct; no se convierte implícitamente
-el modelo de copia en un modelo de referencias compartidas.
+Cada instancia de struct tendrá una identidad lógica propia, independiente de
+sus campos y de su dirección física. `persona == persona` será verdadero; dos
+instancias distintas serán diferentes aunque sus campos coincidan.
+
+Inicializar una variable mediante copia, pasar un argumento por valor o
+materializar un resultado retornado producirá una instancia con identidad propia.
+La igualdad observará las instancias de sus operandos, sin introducir copias
+adicionales para comparar. Las optimizaciones no podrán cambiar ese resultado.
+
+```c
+Persona persona = Persona { nombre: "Ana", edad: 20 };
+Persona otra = persona;
+println(persona == otra);
+println(persona == persona);
+```
+
+El ejemplo mostrará `false` y `true`. Asignar nuevos campos o copiar otro valor
+sobre una instancia ya existente conservará la identidad de la instancia destino.
+Una referencia o su copia seguirá identificando el mismo dato original; copiar
+un struct no lo convertirá en una referencia compartida. Los campos de referencia
+conservarán su semántica de compartir el dato apuntado.
 
 Entre dos anulables compatibles, dos `null` serán iguales, un ausente y un
 presente serán distintos, y dos presentes usarán la igualdad de su tipo base.
@@ -751,8 +777,14 @@ sin entregar texto parcial.
 se mostrarán como `true` o `false`. Los valores anulables requerirán una
 comprobación previa. `print` y `println` serán funciones `void`: no devolverán
 un valor, tampoco `null`. Esta última aclaración sustituye el comentario anterior
-que proponía retornar `null` en fallo. Cómo comunicar los fallos de salida sin
-retorno queda pendiente de decisión.
+que proponía retornar `null` en fallo.
+
+Si falla la escritura, se detendrá el programa con un error de ejecución
+controlado y un estado de salida distinto de cero. Se intentará informar la
+causa por la salida de errores estándar; si ese canal también falla, se
+conservará el estado de fallo sin intentar imprimir errores indefinidamente.
+No se devolverá un valor ni se lanzará una excepción recuperable en el lenguaje.
+La salida que ya se haya escrito antes del fallo no se revertirá.
 
 `to_string` aceptará `i32`, `bool` y `null`. Las funciones incorporadas con varios
 tipos admitidos serán una excepción a la ausencia de sobrecarga definida por
@@ -810,10 +842,6 @@ documento junto con las aclaraciones posteriores del usuario. El
 [inventario](decisiones-pendientes.md) conservan el contexto de las alternativas;
 no son reglas vigentes ni nuevas solicitudes de aprobación.
 
-- Precisar identidad de structs después de copias, parámetros y retornos.
-- Precisar el refinamiento de anulables frente a mutaciones por llamadas y su
-  comprobación dinámica.
-- Definir cómo informan fallos las funciones de salida `void`.
 - Formalizar formatos de literales, palabras reservadas y gramática completa.
 - Diseñar análisis de inicialización parcial y contratos entre funciones,
   alcanzabilidad, vida útil y administración interna de memoria.

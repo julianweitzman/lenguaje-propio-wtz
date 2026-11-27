@@ -6,11 +6,21 @@
 > y las aclaraciones están en [respuestas-diseno.json](respuestas-diseno.json).
 > Las alternativas de este inventario son históricas, no preguntas aún sin responder.
 
+## Detalles cerrados por delegación del usuario
+
+El usuario autorizó resolver los tres detalles restantes según criterio técnico:
+
+- Cada copia materializada de un struct tiene identidad propia; la asignación
+  a una instancia existente conserva la identidad destino.
+- Los anulables comprobados que puedan cambiar por llamadas se validan de nuevo
+  al usarlos; encontrar `null` produce un error de ejecución controlado.
+- `print` y `println` siguen siendo `void`; un fallo de escritura termina el
+  programa, intenta informar por stderr y produce un estado de salida de fallo.
+
+Las reglas completas están en [la sintaxis fuente](sintaxis-codigo-fuente.md).
+
 ## Detalles que todavía necesitan precisión
 
-- Identidad de structs después de copiar, pasar por valor o retornar.
-- Refinamiento de anulables tras llamadas que pueden mutarlos, con error runtime.
-- Canal de error de salida: print/println son void y no retornan null.
 - Prefijos de literales y posiciones de separadores para la gramática.
 
 El análisis de inicialización parcial, alcanzabilidad y vida útil se implementará

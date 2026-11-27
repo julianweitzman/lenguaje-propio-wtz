@@ -842,6 +842,8 @@ documento junto con las aclaraciones posteriores del usuario. El
 [inventario](decisiones-pendientes.md) conservan el contexto de las alternativas;
 no son reglas vigentes ni nuevas solicitudes de aprobación.
 
+- Diseñar colecciones: sintaxis y comportamiento pendientes.
+- Diseñar enums: sintaxis y comportamiento pendientes.
 - Formalizar formatos de literales, palabras reservadas y gramática completa.
 - Diseñar análisis de inicialización parcial y contratos entre funciones,
   alcanzabilidad, vida útil y administración interna de memoria.

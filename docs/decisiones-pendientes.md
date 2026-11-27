@@ -19,6 +19,14 @@ El usuario autorizó resolver los tres detalles restantes según criterio técni
 
 Las reglas completas están en [la sintaxis fuente](sintaxis-codigo-fuente.md).
 
+## Temas pendientes de diseño
+
+- Colecciones.
+- Enums.
+
+Se registran como temas para discutir; todavía no se define su sintaxis ni su
+comportamiento.
+
 ## Detalles que todavía necesitan precisión
 
 - Prefijos de literales y posiciones de separadores para la gramática.

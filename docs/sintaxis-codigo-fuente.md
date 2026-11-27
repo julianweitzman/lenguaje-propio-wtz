@@ -11,9 +11,9 @@ compilador ni VM; la gramática formal y la implementación quedan pendientes.
 
 - Cada programa deberá definir una única función `main` dentro de un namespace
   como punto de entrada.
-- La inicialización será opcional en declaraciones de variables globales,
-  locales y atributos. Leer un valor antes de inicializarlo será un error de
-  compilación.
+- La inicialización será opcional en variables locales mutables y atributos.
+  Toda declaración `const`, global o local, deberá incluir un inicializador.
+  Leer un valor antes de inicializarlo será un error de compilación.
 - Las declaraciones globales se escribirán con `const`. Las constantes serán
   inmutables y también podrán declararse dentro de funciones.
 - Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
@@ -92,8 +92,9 @@ reemplaza la ausencia inicial de `const`. Las locales se
 limitarán al bloque donde se declaren y a sus bloques interiores.
 Una variable podrá ocultar otra del mismo nombre en un ámbito exterior.
 Declarar dos variables con el mismo nombre dentro del mismo ámbito será un
-error de compilación. Se admitirán declaraciones sin inicializador tanto
-globales como locales; no habrá inicialización implícita a cero.
+error de compilación. Las variables locales mutables podrán declararse sin
+inicializador; las globales, al ser `const`, deberán inicializarse al declararse.
+No habrá inicialización implícita a cero.
 
 ```c
 namespace aplicacion {
@@ -133,16 +134,17 @@ funciones:
 const i32 limite = 10;
 ```
 
-Una constante podrá declararse sin inicializador, pero admitirá exactamente una
-asignación en cada camino de ejecución. Leerla antes de esa asignación o intentar
-reasignarla será un error de compilación. Tampoco se podrán modificar sus campos
+Toda constante deberá inicializarse en su declaración, tanto globalmente como
+dentro de funciones. `const i32 limite;` será un error de compilación. No se
+admitirá inicialización diferida ni reasignación. Tampoco se podrán modificar sus campos
 ni obtener referencias mutables hacia ella o sus campos. Una constante no podrá
 almacenar referencias mutables, tampoco dentro de sus campos.
 
 Los inicializadores globales solo admitirán literales y expresiones calculables
 al compilar, incluidas otras constantes globales resolubles. Se rechazarán ciclos,
-llamadas a funciones y referencias a variables locales. Si se omite el inicializador,
-la primera asignación estará sujeta a estas mismas restricciones globales.
+llamadas a funciones y referencias a variables locales. Las constantes locales
+podrán usar expresiones evaluadas al ejecutar su declaración, incluidas llamadas
+a funciones; siempre deberán respetar el tipo declarado.
 
 Los parámetros recibirán sus valores al llamar a la función y no necesitarán
 un inicializador escrito en su declaración.

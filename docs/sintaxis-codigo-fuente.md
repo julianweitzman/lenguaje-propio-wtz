@@ -66,7 +66,9 @@ Los strings tendrán longitud variable; su representación se explica en la
 
 Las variables globales se declararán fuera de las funciones. Para las locales se
 propone limitarlas al bloque donde se declaren y a sus bloques interiores.
-Las reglas de ocultamiento y nombres repetidos quedan pendientes. Una declaración sin inicializador será un error,
+Una variable podrá ocultar otra del mismo nombre en un ámbito exterior.
+Declarar dos variables con el mismo nombre dentro del mismo ámbito será un
+error de compilación. Una declaración sin inicializador será un error,
 incluso para una variable global; no habrá inicialización implícita a cero.
 
 ```c
@@ -86,6 +88,23 @@ namespace aplicacion {
 Los parámetros recibirán sus valores al llamar a la función y no necesitarán
 un inicializador escrito en la declaración. Las restricciones de los
 inicializadores globales siguen pendientes.
+
+Por ejemplo, una variable local podrá ocultar una global:
+
+```c
+namespace aplicacion {
+    i32 valor = 10;
+
+    void ejemplo() {
+        i32 valor = 20;
+        println(valor);
+    }
+}
+```
+
+Dentro de `ejemplo`, el nombre sin prefijo `valor` designará la variable local.
+La global conservará su valor. Los inicializadores globales permitidos y su
+orden de evaluación todavía no están definidos.
 
 ## Concatenación de strings
 
@@ -202,6 +221,18 @@ se propone agregar definiciones de structs dentro de ellos. El uso de
 `return;` en funciones `void` queda pendiente de cerrar junto con las reglas
 de retorno.
 
+## Modelo de datos pendiente
+
+La asignación, la copia y el paso de argumentos se definirán cuando se diseñe
+cómo maneja los datos el programa. Como orientación inicial se considera un
+modelo parecido al de C#, con tipos de valor y tipos de referencia. Esta es
+una propuesta de diseño, no la adopción de sus reglas.
+
+Todavía no se decide qué tipos pertenecerán a cada categoría, cuándo se copiará
+un valor, cuándo se compartirá una referencia ni cómo se administrará su memoria.
+Estas decisiones incluyen el comportamiento de los structs y los parámetros de
+funciones. Tampoco se incorporan por ahora modificadores como `ref` u `out`.
+
 ## Namespaces y visibilidad
 
 El lenguaje usará namespaces para organizar nombres y reducir la necesidad de
@@ -279,9 +310,29 @@ programa/
 Los archivos fuera de esa raíz no pertenecerán al conjunto de fuentes del
 programa. La ubicación física no define todavía el nombre del namespace.
 
+Si varios namespaces incorporados mediante `use` exponen el mismo nombre,
+utilizar ese nombre sin prefijo será un error de compilación por ambigüedad.
+Una ruta completa permitirá elegir el miembro:
+
+```c
+namespace aplicacion {
+    use matematicas;
+    use estadisticas;
+
+    public i32 main() {
+        println(matematicas::sumar(1, 2));
+        return 0;
+    }
+}
+```
+
+El ejemplo supone que ambos namespaces exponen `sumar`; una llamada sin prefijo
+`sumar(1, 2)` sería ambigua. No se establece un error por el mero hecho de declarar
+ambos `use` si no se utiliza el nombre ambiguo.
+
 Quedan pendientes el procedimiento de descubrimiento y carga de los archivos,
 si un namespace puede repartirse entre varios archivos, los namespaces anidados
-y el alcance exacto y los conflictos de nombres de `use`.
+y el alcance exacto de `use`.
 
 ## Structs
 
@@ -344,7 +395,8 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 - Gramática formal y restricciones de identificadores e inicializadores globales.
 - Conversiones numéricas, división, desbordamientos y desplazamientos inválidos.
 - Firma y selección de `main`, retornos, recursión y paso de argumentos.
-- Alcance y conflictos de `use`, namespaces anidados y organización de módulos y archivos.
+- Alcance de `use`, namespaces anidados y organización de módulos y archivos.
+- Modelo de tipos de valor y referencia, copia y administración de memoria.
 - Aplicación detallada de visibilidad a structs y sus campos.
 - Inclusión de otras estructuras de control y reglas completas de operadores.
 - Creación, acceso a campos, mutabilidad, copia e inicialización de structs.

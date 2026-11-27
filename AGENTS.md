@@ -2,10 +2,12 @@
 
 ## Estructura y organización
 
-WTZ es un lenguaje educativo basado en pila, con compilador y máquina virtual previstos en Rust. Actualmente el repositorio contiene únicamente documentación de diseño:
+WTZ es un lenguaje educativo con compilador y máquina virtual basada en pila previstos en Rust. Actualmente el repositorio contiene únicamente documentación de diseño:
 
-- `README.md`: presentación, hoja de ruta y estructura propuesta.
-- `docs/Arquitectura.md`: responsabilidades, formato de bytecode y decisiones pendientes.
+- `README.md`: presentación breve, estado y enlaces a documentación.
+- `docs/arquitectura.md`: responsabilidades, formato de bytecode y decisiones pendientes.
+- `docs/sintaxis-codigo-fuente.md`: propuesta del lenguaje fuente y sus tipos.
+- `docs/sintaxis-bytecode.md`: vista textual de las instrucciones que se codificarán en binario.
 
 Todavía no existen `Cargo.toml`, código, pruebas ni recursos gráficos. Al implementar, seguir la separación propuesta: `src/compiler/` para análisis y generación de código, `src/bytecode/` para opcodes y codificación binaria, y `src/vm/` para ejecución. Ubicar pruebas de integración en `tests/` y programas `.wtz` de ejemplo en `examples/`.
 
@@ -37,4 +39,4 @@ Usar ramas por tarea y commits concretos; por ejemplo, `docs/guia-colaboracion` 
 
 ## Arquitectura
 
-Consultar `docs/Arquitectura.md` antes de modificar el lenguaje o bytecode. Documentar opcodes, tamaños de operandos, orden de bytes y errores. Separar compilación y ejecución; el diseño inicial no contempla una representación intermedia independiente.
+Consultar `docs/arquitectura.md` antes de modificar el lenguaje o bytecode. Documentar opcodes, tamaños de operandos, orden de bytes y errores. Separar compilación y ejecución; el diseño contempla instrucciones intermedias de pila con una vista textual y codificación binaria.

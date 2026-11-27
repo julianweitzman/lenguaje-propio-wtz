@@ -33,7 +33,7 @@ Usar el sistema de pruebas integrado de Rust cuando exista código. Colocar prue
 
 Los agentes deben usar la habilidad `git` para gestionar ramas, commits y publicaciones, siguiendo sus instrucciones y conservando el trabajo existente.
 
-El historial usa resúmenes breves en inglés, como `Update README.md`, sin prefijos establecidos. Para nuevas contribuciones, usar ramas por tarea y commits concretos; por ejemplo, `docs/guia-colaboracion` y `docs: traducir guia de contribucion`. Describir en cada PR el cambio, las decisiones relevantes, las incidencias relacionadas y la validación realizada. Indicar comprobaciones pendientes.
+Usar ramas por tarea y commits concretos; por ejemplo, `docs/guia-colaboracion` y `docs: traducir guia de contribucion`. Describir en cada PR el cambio, las decisiones relevantes, las incidencias relacionadas y la validación realizada. Indicar comprobaciones pendientes.
 
 ## Arquitectura
 

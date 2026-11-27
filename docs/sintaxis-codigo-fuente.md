@@ -4,8 +4,8 @@ WTZ tendrá un lenguaje fuente de mayor nivel que se compilará a instrucciones
 intermedias de una máquina de pila y después a bytecode binario. Su objetivo
 es mejorar la legibilidad y permitir comprobar tipos antes de ejecutar.
 
-Este documento es una propuesta inicial. No existen todavía compilador ni VM,
-y la gramática definitiva queda pendiente.
+Este documento recoge las decisiones de la primera versión. No existen todavía
+compilador ni VM; la gramática formal y la implementación quedan pendientes.
 
 ## Reglas generales
 
@@ -49,11 +49,11 @@ Las palabras reservadas se escribirán en minúsculas. Los nombres de instruccio
 en mayúsculas, como `PUSH_I32`, pertenecen al bytecode. Adoptar este estilo no
 incorpora automáticamente punteros, conversiones ni gestión de memoria de C.
 
-## Tipos iniciales propuestos
+## Tipos iniciales
 
 | Tipo | Valores | Operaciones iniciales |
 | --- | --- | --- |
-| `i32` | Enteros con signo de 32 bits: de -2147483648 a 2147483647. | Suma, resta y multiplicación. |
+| `i32` | Enteros con signo de 32 bits: de -2147483648 a 2147483647. | Aritmética entera y comparaciones. |
 | `bool` | `true` y `false`. | Condiciones. |
 | `string` | Texto entre comillas dobles, como `"Ana"`. | Literales, concatenación e impresión; contenido inmutable. |
 
@@ -88,8 +88,8 @@ if (entrada != null) {
 
 Las variables globales se declararán fuera de las funciones, con la forma
 `const tipo nombre`, por ejemplo `const i32 limite = 10;`. Esta decisión
-reemplaza la ausencia inicial de `const`. Para las locales se
-propone limitarlas al bloque donde se declaren y a sus bloques interiores.
+reemplaza la ausencia inicial de `const`. Las locales se
+limitarán al bloque donde se declaren y a sus bloques interiores.
 Una variable podrá ocultar otra del mismo nombre en un ámbito exterior.
 Declarar dos variables con el mismo nombre dentro del mismo ámbito será un
 error de compilación. Se admitirán declaraciones sin inicializador tanto
@@ -122,8 +122,9 @@ println(valor);
 En cambio, `i32 valor; println(valor);` será un error de compilación. La regla
 también se aplicará a atributos y variables globales. Una operación que lea y
 escriba, como `contador++`, requiere un valor inicializado previamente.
-Los detalles del análisis entre funciones quedan pendientes, sin cambiar la
-prohibición de leer valores no inicializados.
+La comprobación se realizará por variable y por campo. Antes de copiar un
+valor o pasar una referencia, los datos que puedan leerse deberán estar
+inicializados. No habrá parámetros exclusivos de salida en esta versión.
 
 `const` declarará un valor inmutable tanto en el ámbito global como dentro de
 funciones:
@@ -132,14 +133,19 @@ funciones:
 const i32 limite = 10;
 ```
 
-Una vez inicializada una constante no podrá recibir otra asignación. La regla
-general permite omitir su inicializador; quedan por precisar la asignación
-inicial diferida y el alcance de la inmutabilidad para valores compuestos y
-referencias. No se permitirá usar un parámetro mutable para eludir `const`.
+Una constante podrá declararse sin inicializador, pero admitirá exactamente una
+asignación en cada camino de ejecución. Leerla antes de esa asignación o intentar
+reasignarla será un error de compilación. Tampoco se podrán modificar sus campos
+ni obtener referencias mutables hacia ella o sus campos. Una constante no podrá
+almacenar referencias mutables, tampoco dentro de sus campos.
+
+Los inicializadores globales solo admitirán literales y expresiones calculables
+al compilar, incluidas otras constantes globales resolubles. Se rechazarán ciclos,
+llamadas a funciones y referencias a variables locales. Si se omite el inicializador,
+la primera asignación estará sujeta a estas mismas restricciones globales.
 
 Los parámetros recibirán sus valores al llamar a la función y no necesitarán
-un inicializador escrito en la declaración. Las restricciones de los
-inicializadores globales siguen pendientes.
+un inicializador escrito en su declaración.
 
 Por ejemplo, una variable local podrá ocultar una global:
 
@@ -155,8 +161,8 @@ namespace aplicacion {
 ```
 
 Dentro de `ejemplo`, el nombre sin prefijo `valor` designará la variable local.
-La global conservará su valor. Los inicializadores globales permitidos y su
-orden de evaluación todavía no están definidos.
+La global conservará su valor. Las dependencias entre inicializadores globales
+se resolverán al compilar, independientemente del orden de escritura.
 
 ## Concatenación de strings
 
@@ -190,7 +196,7 @@ La traducción de estas operaciones a bytecode se diseñará más adelante.
 
 ## Asignaciones y control de flujo
 
-Se propone permitir reasignar una variable conservando su tipo:
+Se permitirá reasignar una variable conservando su tipo:
 
 ```c
 i32 edad = 20;
@@ -239,12 +245,12 @@ En `for (inicializacion; condicion; actualizacion)`, la inicialización se
 ejecutará una sola vez. Antes de cada vuelta se comprobará la condición; tras
 cada vuelta se ejecutará la actualización. Una variable declarada en la
 inicialización solo será visible en la condición, actualización y cuerpo de
-ese `for`, no después del bucle. La posibilidad de omitir partes de la cabecera
-queda pendiente de definir.
+ese `for`, no después del bucle. Cualquiera de las tres partes podrá omitirse;
+una condición omitida equivale a `true`. Por ejemplo, `for (;;) { break; }`.
 
 El incremento posfijo `i++` usado en los ejemplos aumentará un `i32` en uno.
-Sus reglas ante desbordamientos y el resto de variantes de incremento y
-decremento se cerrarán junto con los operadores.
+Se admitirán también decremento y variantes prefijas. El overflow será modular
+como en el resto de la aritmética entera.
 
 ### Salidas y retornos
 
@@ -265,36 +271,58 @@ puedan finalizar una función con retorno deberán devolver un valor compatible.
 incluye el operador condicional ternario. La traducción de estas estructuras
 a bytecode se diseñará después.
 
-## Operadores y notación pendientes
+## Operadores, evaluación y conversiones
 
-La siguiente tabla reúne candidatos de notación familiar. No constituye una
-adopción de los operadores ni de las reglas de C: el conjunto exacto, los tipos
-admitidos y la asociatividad deberán definirse para WTZ. Las expresiones
-respetarán la jerarquía habitual de operaciones: los paréntesis agrupan,
-multiplicación/división/módulo preceden a suma/resta. Así, `2 + 3 * 4` dará
-`14`, mientras que `(2 + 3) * 4` dará `20`. La tabla completa de precedencia
-para las demás categorías queda pendiente.
+No habrá operaciones de bits: quedan excluidos AND, OR y XOR bit a bit,
+complemento, desplazamientos y sus asignaciones compuestas. `&` se usará solo
+para obtener referencias; `&&` y `||` serán operadores lógicos booleanos.
 
-| Categoría | Operadores |
+La siguiente tabla fija la precedencia de mayor a menor:
+
+| Nivel | Operadores |
 | --- | --- |
-| Aritmética entera | `+`, `-`, `*`, `/`, `%`; signos unarios `+` y `-`. |
-| Comparación e igualdad | `<`, `<=`, `>`, `>=`, `==`, `!=`. |
-| Lógica | `&&`, `||`, `!`; `&&` y `||` tendrán cortocircuito. |
-| Bits sobre enteros | `&`, `|`, `^`, `~`, `<<`, `>>`. |
-| Asignación | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`. |
-| Incremento y decremento | Incremento posfijo `i++` definido para los bucles; otras variantes de `++` y `--` pendientes. |
+| 1 | Llamadas `()`, acceso a campos `.`, rutas `::`. |
+| 2 | Incremento y decremento posfijos: `x++`, `x--`. |
+| 3 | Unarios: `!`, `+`, `-`, desreferencia `*`, referencia `&`, `++x`, `--x`. |
+| 4 | Multiplicación, división y módulo: `*`, `/`, `%`. |
+| 5 | Suma, resta y concatenación: `+`, `-`. |
+| 6 | Comparaciones: `<`, `<=`, `>`, `>=`. |
+| 7 | Igualdad: `==`, `!=`. |
+| 8 | AND lógico: `&&`. |
+| 9 | OR lógico: `||`. |
+| 10 | Asignaciones: `=`, `+=`, `-=`, `*=`, `/=`, `%=`. |
 
-La concatenación de strings con `+` es una regla propia del lenguaje.
-El overflow entero tendrá comportamiento modular, bajo responsabilidad del
-usuario, sin error automático por desbordamiento. Para `i32` se conservarán los
-32 bits inferiores del resultado y se interpretarán con signo en complemento
-a dos: `2147483647 + 1` dará `-2147483648`, y `-2147483648 - 1` dará
-`2147483647`. Esta regla sustituye el ejemplo anterior que indicaba `-1`.
-Las conversiones, división por cero y otros errores aritméticos siguen pendientes.
+Los paréntesis cambiarán el agrupamiento. Las asignaciones y los unarios se
+agruparán de derecha a izquierda; los restantes operadores binarios, de izquierda
+a derecha. Así, `2 + 3 * 4` dará `14`, y `(2 + 3) * 4` dará `20`.
+Los operandos y argumentos se evaluarán de izquierda a derecha. `&&` y `||`
+tendrán cortocircuito: no evaluarán el segundo operando si el primero determina
+el resultado. Las operaciones lógicas requerirán `bool`; la aritmética requerirá
+`i32`, salvo la concatenación de dos strings con `+`.
 
-También se propone la notación de comentarios `//` y `/* ... */`, y escapes
-como `\t`, `\\` y `\"`, restringidos a ASCII. Su conjunto completo queda
-pendiente. El escape `\n` ya está definido para insertar saltos de línea.
+Los operadores de incremento y decremento requerirán un destino mutable `i32`.
+Los prefijos producirán el valor actualizado; los posfijos, el valor anterior.
+Las asignaciones compuestas evaluarán el destino una sola vez.
+
+No habrá conversiones implícitas entre tipos base distintos. Las conversiones
+numéricas explícitas usarán `tipo(expresion)` cuando existan otros tipos numéricos;
+por ahora el único tipo numérico será `i32`. El texto se obtendrá con `to_string`.
+
+El overflow de `i32` será modular: se conservarán los 32 bits inferiores y se
+interpretarán en complemento a dos. `2147483647 + 1` dará `-2147483648`.
+La división entera truncará hacia cero; el resto conservará el signo del dividendo.
+Dividir o calcular módulo por cero producirá un error controlado de ejecución.
+`-2147483648 / -1` dará `-2147483648`, y su resto será cero.
+
+## Identificadores, comentarios y strings
+
+Los identificadores usarán letras ASCII, dígitos y `_`, sin comenzar con dígito.
+Se distinguirán mayúsculas de minúsculas y no se podrán usar palabras reservadas
+como nombres.
+
+Los comentarios serán `//` hasta el final de la línea y `/* ... */`, sin
+anidamiento. Los strings ocuparán una sola línea física y admitirán los escapes
+`\n`, `\r`, `\t`, `\\`, `\"` y `\0`. Todos sus valores serán ASCII.
 
 ## Funciones
 
@@ -319,11 +347,13 @@ de variable. Las llamadas usarán argumentos separados por comas, por ejemplo
 La firma del punto de entrada será `i32 main()`, sin parámetros, dentro de un
 namespace y sin modificador `public`. `return 0;` indicará terminación correcta.
 Se permitirá recursión y llamar a funciones declaradas después, sin declaraciones
-anticipadas. El paso de argumentos se describe a continuación.
+anticipadas, incluida recursión mutua. No habrá sobrecarga, parámetros opcionales
+ni cantidad variable de argumentos. Cada llamada deberá respetar la cantidad y
+los tipos de parámetros. El paso de argumentos se describe a continuación.
 
 Los fragmentos de sentencias de este documento deberán colocarse dentro de una
 función para formar un programa. Los namespaces agruparán las declaraciones de variables globales y funciones;
-se propone agregar definiciones de structs dentro de ellos.
+también contendrán definiciones de structs.
 
 ## Paso de argumentos y modelo de datos
 
@@ -340,33 +370,33 @@ Un parámetro declarado como `tipo* nombre` permitirá modificar el dato origina
 del llamador. El asterisco expresa aquí el acceso al original en lugar de una
 copia:
 
-```text
+```c
 void cambiar_original(i32* numero) {
-    ... cuerpo pendiente de la sintaxis de acceso al dato ...
+    *numero = 20;
 }
 ```
 
-El segundo ejemplo ilustra la firma; el cuerpo no es código ejecutable.
-En la llamada se pasará una referencia explícita mediante `&variable`:
+La llamada pasará una referencia explícita mediante `&variable`:
 
 ```c
 i32 valor = 10;
 cambiar_original(&valor);
 ```
 
-`&valor` permitirá a la función acceder al dato original a través de su parámetro
-`i32*`. En cambio, un parámetro `i32` recibirá una copia al llamar con `valor`.
-Se mantiene la inmutabilidad de `const`: no se podrá usar esta forma para
-modificar una constante.
+`*numero` permitirá leer o modificar el dato original. También se podrán guardar
+referencias en variables: `i32* referencia = &valor;`. No habrá aritmética de
+punteros. Las referencias a temporales y los usos que puedan sobrevivir al dato
+original serán errores de compilación. No se permitirá retornar referencias en
+la primera versión.
 
-Quedan por definir la desreferencia dentro del cuerpo, la posibilidad de
-referencias nulas y las reglas de vida útil y aliasing. No se incorpora automáticamente el
-sistema de punteros ni la aritmética de direcciones de C.
+`T*` no admitirá `null`; `T*?` será una referencia anulable que requerirá una
+comprobación antes de desreferenciarse. No se podrán usar referencias para
+modificar constantes ni sus campos.
 
-La semántica de copia de valores compuestos, asignación y retornos y la
-administración de memoria siguen pendientes. La notación acordada combina
-`tipo*` en el parámetro y `&variable` en la llamada.
-El tratamiento de `self` se decidirá por separado.
+Copiar un struct copiará sus campos. Un campo de referencia copiará la referencia
+y compartirá el dato apuntado, sin hacer una copia profunda. Los strings conservarán
+su contenido inmutable. El algoritmo de comprobación de vida útil y la estrategia
+interna de administración de memoria quedan pendientes de implementación.
 
 ## Namespaces y visibilidad
 
@@ -403,7 +433,9 @@ mediante sus rutas completas, sin `use`.
 
 `use matematicas;` permitirá acceder sin prefijo a todos los miembros públicos
 de ese namespace. Su efecto se limitará al archivo donde se escriba y no se
-propagará a otros archivos del mismo namespace.
+propagará a otros archivos del mismo namespace. Afectará todo el archivo,
+independientemente de dónde se escriba, incluidos sus distintos bloques de
+namespace. No incorporará automáticamente los namespaces hijos.
 
 ```c
 namespace aplicacion {
@@ -483,7 +515,9 @@ La ruta de acceso será `biblioteca::matematicas::sumar(1, 2)` y se podrá escri
 `use biblioteca::matematicas;` para acceder a sus miembros públicos sin prefijo.
 La jerarquía de namespaces no tendrá que coincidir con los directorios.
 
-El procedimiento de descubrimiento y carga de archivos sigue pendiente.
+El compilador recibirá el archivo de `main` y reunirá recursivamente todos los
+archivos `.wtz` de su directorio y subdirectorios, sin seguir enlaces simbólicos.
+Rechazará nombres duplicados en el mismo ámbito y más de un `main`.
 No habrá restricciones de visibilidad entre namespaces padre e hijo.
 
 ## Structs
@@ -515,11 +549,12 @@ impl Persona {
 
 Los métodos usarán declaraciones con la forma `tipo_retorno nombre(parametros)`
 y cuerpos entre llaves. Los métodos de instancia usarán `self` como primer
-parámetro explícito y se invocarán con `persona.cumplir_anios()`:
+parámetro explícito para recibir una copia o `self*` para modificar el original.
+Ambas variantes se invocarán con punto, como `persona.cumplir_anios()`:
 
 ```c
 impl Persona {
-    void cumplir_anios(self) {
+    void cumplir_anios(self*) {
         self.edad = self.edad + 1;
     }
 }
@@ -527,7 +562,9 @@ impl Persona {
 
 Las funciones sin `self` se llamarán mediante el tipo. Se permitirán varios
 bloques `impl` por tipo; repetir la definición de un método será un error de
-compilación. La semántica de copia o referencia de `self` se analizará después.
+compilación. Los bloques `impl` deberán estar en el namespace del struct, pero
+podrán repartirse entre varios archivos. Un método con `self*` no podrá llamarse
+sobre una constante.
 
 ### Acceso y modificación de atributos
 
@@ -586,15 +623,19 @@ o asignarle un valor incompatible será un error de compilación. Se exigirá
 el nombre del tipo: `Persona { ... }`, sin la forma abreviada `{ ... }`.
 
 Los parámetros de structs seguirán la distinción entre copia y acceso al
-original mediante `tipo*`; el alcance de esa copia y las asignaciones quedan
-pendientes del modelo de datos. La ubicación permitida de los bloques `impl` también queda pendiente.
+original mediante `tipo*`, según las reglas del modelo de datos.
 
 ## Entrada y salida
 
 La función incorporada `input()` leerá una línea de la entrada estándar y
 no recibirá parámetros. En caso de éxito devolverá texto ASCII sin el terminador
 de línea; una línea vacía devolverá `""`. En caso de fallo devolverá `null`.
-El tratamiento de fin de entrada y caracteres no ASCII queda pendiente.
+Fin de entrada, fallos de lectura o caracteres fuera de ASCII devolverán `null`,
+sin entregar texto parcial.
+
+`print` y `println` aceptarán un argumento `i32`, `bool` o `string`. Los booleanos
+se mostrarán como `true` o `false`. Los valores anulables requerirán una
+comprobación previa.
 
 La firma será `string? input()`: devolverá un string o `null`. Antes de usar
 el resultado como texto habrá que comprobar que no sea `null`.
@@ -625,18 +666,19 @@ Por ahora se diseñará la sintaxis fuente y sus reglas sin fijar cómo se tradu
 a instrucciones de pila. La documentación de bytecode contiene propuestas que
 se revisarán más adelante y no limitan las características del lenguaje fuente.
 
-## Decisiones pendientes
+## Límites de la primera versión
 
-- Gramática formal y restricciones de identificadores e inicializadores globales.
-- Conversiones numéricas, división y desplazamientos inválidos.
-- Inicialización diferida de constantes e inmutabilidad de compuestos y referencias.
-- Alcance de `use` entre bloques del mismo archivo y carga de archivos.
-- Acceso al dato desde parámetros `tipo*`, copia de compuestos y administración de memoria.
-- Omisión de partes de la cabecera de `for` y reglas completas de operadores.
-- Análisis de inicialización entre funciones y semántica de `self`.
-- Ubicación permitida de los bloques `impl`.
-- Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.
-- Fin de entrada, errores de lectura, entrada no ASCII y formato de valores en la salida.
-- Traducción a bytecode, que se abordará después de la sintaxis fuente.
+No habrá arrays, genéricos, herencia, excepciones, administración manual de
+memoria ni aritmética de punteros. Tampoco operaciones de bits, ternario,
+`switch`, `do`/`while` ni `goto`.
+
+## Trabajo pendiente
+
+- Escribir la gramática formal a partir de estas reglas.
+- Preparar programas completos que combinen las características acordadas.
+- Precisar reglas de tipos para comparaciones de strings, structs y referencias.
+- Diseñar el análisis de inicialización, constantes, anulables y vida útil.
+- Definir la administración interna de memoria sin exponer memoria manual.
+- Abordar la traducción a bytecode después de cerrar el lenguaje fuente.
 
 Consultar la [arquitectura](arquitectura.md) para las responsabilidades de cada etapa.

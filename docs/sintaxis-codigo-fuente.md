@@ -348,7 +348,8 @@ Este ejemplo usa el namespace `matematicas` definido anteriormente. Las rutas
 completas seguirán disponibles aunque se utilice `use`.
 
 Las rutas a namespaces anidados podrán expresarse con `::`, como
-`use biblioteca::matematicas;`; sus reglas de declaración quedan pendientes.
+`use biblioteca::matematicas;`. Se podrán declarar con
+`namespace biblioteca::matematicas { ... }`.
 No se fija todavía una forma de importar un único miembro.
 
 `main` deberá pertenecer a un namespace y declararse con `public`. No tendrá
@@ -393,9 +394,27 @@ El ejemplo supone que ambos namespaces exponen `sumar`; una llamada sin prefijo
 `sumar(1, 2)` sería ambigua. No se establece un error por el mero hecho de declarar
 ambos `use` si no se utiliza el nombre ambiguo.
 
+Un namespace podrá repartirse entre varios archivos dentro de la raíz del
+programa y sus subdirectorios. Las declaraciones con la misma ruta de namespace
+pertenecerán al mismo namespace, independientemente del archivo.
+
+Se admitirán namespaces anidados y su declaración mediante rutas:
+
+```c
+namespace biblioteca::matematicas {
+    public i32 sumar(i32 a, i32 b) {
+        return a + b;
+    }
+}
+```
+
+La ruta de acceso será `biblioteca::matematicas::sumar(1, 2)` y se podrá escribir
+`use biblioteca::matematicas;` para acceder a sus miembros públicos sin prefijo.
+La jerarquía de namespaces no tendrá que coincidir con los directorios.
+
 Quedan pendientes el procedimiento de descubrimiento y carga de los archivos,
-si un namespace puede repartirse entre varios archivos, los namespaces anidados
-y el alcance exacto de `use`.
+el alcance exacto de `use` y las reglas de acceso privado entre namespaces
+padre e hijo.
 
 ## Structs
 
@@ -428,8 +447,22 @@ impl Persona {
 ```
 
 Los métodos usarán declaraciones con la forma `tipo_retorno nombre(parametros)`
-y cuerpos entre llaves. La sintaxis del receptor de instancia y cómo se accede
-a sus campos todavía deben definirse.
+y cuerpos entre llaves. La sintaxis del receptor de instancia todavía debe
+definirse; no se adopta automáticamente el sistema de préstamos de Rust.
+
+### Acceso y modificación de atributos
+
+Se accederá a los atributos con un punto y se podrán modificar mediante
+asignación de un valor del tipo correspondiente:
+
+```c
+Persona persona = Persona { nombre: "Ana", edad: 20 };
+println(persona.nombre);
+persona.edad = 21;
+```
+
+Asignar un atributo lo inicializará si todavía no tenía valor. Leerlo requerirá
+que esté inicializado, conforme a la regla general de comprobación en compilación.
 
 ### Funciones de creación y convención `new`
 
@@ -477,7 +510,7 @@ tipo por contexto queda pendiente de precisar.
 
 También quedan pendientes:
 
-- Sintaxis de acceso y modificación de campos y visibilidad de métodos.
+- Visibilidad de métodos.
 - Sintaxis del receptor y llamadas a métodos de instancia.
 - Asignación, copia y paso de structs a funciones, junto con el modelo de datos.
 - Ubicación y cantidad de bloques `impl` para un mismo tipo.
@@ -522,13 +555,13 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 - Gramática formal y restricciones de identificadores e inicializadores globales.
 - Conversiones numéricas, división, desbordamientos y desplazamientos inválidos.
 - Firma y selección de `main`, recursión y paso de argumentos.
-- Alcance de `use`, namespaces anidados y organización de módulos y archivos.
+- Alcance de `use`, acceso privado entre namespaces padre e hijo y carga de archivos.
 - Modelo de tipos de valor y referencia, copia y administración de memoria.
 - Aplicación detallada de visibilidad a tipos struct y sus métodos; los atributos son públicos.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
 - Análisis de inicialización entre funciones, receptores de métodos y bloques `impl`.
 - Reglas detalladas de construcción mediante campos nombrados.
-- Acceso a campos, mutabilidad y copia de structs.
+- Copia de structs, junto con el modelo de datos.
 - Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.
 - Fin de entrada, errores de lectura, entrada no ASCII y formato de valores en la salida.
 - Traducción a bytecode, que se abordará después de la sintaxis fuente.

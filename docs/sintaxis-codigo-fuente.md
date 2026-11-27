@@ -431,11 +431,14 @@ Los métodos usarán declaraciones con la forma `tipo_retorno nombre(parametros)
 y cuerpos entre llaves. La sintaxis del receptor de instancia y cómo se accede
 a sus campos todavía deben definirse.
 
-### Creación mediante `new`
+### Funciones de creación y convención `new`
 
-`new` se escribirá explícitamente dentro de un bloque `impl`, podrá recibir
-argumentos y devolverá un valor del struct. No se generará automáticamente.
-La llamada usará `Tipo::new(argumentos)`:
+`new` será únicamente un nombre usado por convención para una función asociada
+que crea y devuelve un struct. No será obligatorio definirla ni usar ese nombre;
+no tendrá un tratamiento especial ni se generará automáticamente.
+
+Si se elige esa convención, la función se escribirá dentro de un bloque `impl`,
+podrá recibir argumentos y se llamará con `Tipo::new(argumentos)`:
 
 ```c
 impl Persona {
@@ -451,7 +454,8 @@ Persona persona = Persona::new("Ana", 20);
 
 El ejemplo muestra una función asociada al tipo; no necesita un receptor de
 instancia. Se usa `public` para que `new` pueda invocarse desde otro namespace;
-las reglas generales de visibilidad de métodos siguen pendientes.
+las reglas generales de visibilidad de métodos siguen pendientes. Se podrá
+usar otro nombre, como `crear`, y llamarlo mediante `Persona::crear(...)`.
 
 ### Creación mediante campos nombrados
 

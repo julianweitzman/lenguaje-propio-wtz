@@ -11,7 +11,8 @@ y la gramática definitiva queda pendiente.
 
 - Cada programa deberá definir una única función `main` pública dentro de un namespace
   como punto de entrada.
-- Toda variable, global o local, deberá inicializarse al declararse.
+- Toda variable, global o local, deberá inicializarse al declararse. Los campos
+  de structs no exigirán inicializadores en su declaración.
 - No habrá declaraciones de constantes por ahora.
 - Existirán variables globales y locales; sus reglas de alcance se definirán explícitamente.
 - El código fuente completo, incluidos comentarios y strings, será ASCII.
@@ -380,7 +381,8 @@ y el alcance exacto de `use`.
 
 ## Structs
 
-Se propone incorporar tipos compuestos con campos nombrados y tipados:
+Los structs definirán tipos compuestos con campos nombrados y tipados. No será
+obligatorio inicializar los campos al declarar el struct:
 
 ```c
 struct Persona {
@@ -389,17 +391,48 @@ struct Persona {
 }
 ```
 
-Este ejemplo define la forma propuesta del tipo, no crea una variable. La
-sintaxis todavía no constituye una especificación completa de structs.
+Los structs tendrán métodos, definidos en bloques `impl` separados de la
+declaración de campos, tomando como referencia la organización de Rust. Se
+mantendrá la notación de funciones de WTZ, con el tipo de retorno antes del
+nombre; no se adopta automáticamente la sintaxis ni el modelo de datos de Rust.
 
-Antes de incorporarlos hay que definir:
+La forma general del bloque será:
 
-- Cómo crear e inicializar un valor del struct.
-- Cómo acceder a sus campos y si se pueden modificar.
-- Cómo se comportan la asignación, la copia y el paso de structs a funciones.
-- Cómo se aplica la inicialización obligatoria a todos sus campos.
+```text
+impl Persona {
+    ... métodos de Persona ...
+}
+```
 
-No se asumen las reglas de structs de C ni se fija su representación en memoria.
+Los métodos usarán declaraciones con la forma `tipo_retorno nombre(parametros)`
+y cuerpos entre llaves. La sintaxis del receptor de instancia y cómo se accede
+a sus campos todavía deben definirse.
+
+Para crear un valor se utilizará una llamada asociada al tipo, `Tipo::new()`:
+
+```c
+Persona persona = Persona::new();
+```
+
+No se exigirá una lista de inicialización de todos los campos en el lugar de
+creación. Esta regla reemplaza la propuesta de construcción mediante
+`Persona { nombre: "Ana", edad: 20 }`.
+
+Queda pendiente definir si `new` se genera automáticamente o debe escribirse
+en un bloque `impl`, si admite parámetros y qué valores o estado tienen los
+campos no inicializados. No se asumen valores predeterminados ni se permite
+concluir que leer un campo sin inicializar sea válido.
+
+También quedan pendientes:
+
+- Acceso y modificación de campos y visibilidad de campos y métodos.
+- Sintaxis del receptor y llamadas a métodos de instancia.
+- Asignación, copia y paso de structs a funciones, junto con el modelo de datos.
+- Ubicación y cantidad de bloques `impl` para un mismo tipo.
+
+La excepción de inicialización se refiere aquí a los campos de structs; la regla
+de inicialización de variables globales y locales se conserva hasta aclarar si
+el cambio también debe aplicarse a ellas.
 
 ## Entrada y salida
 
@@ -443,7 +476,8 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 - Modelo de tipos de valor y referencia, copia y administración de memoria.
 - Aplicación detallada de visibilidad a structs y sus campos.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
-- Creación, acceso a campos, mutabilidad, copia e inicialización de structs.
+- Reglas de `new`, campos no inicializados, receptores de métodos y bloques `impl`.
+- Acceso a campos, mutabilidad y copia de structs.
 - Operaciones adicionales de strings y conversiones aparte de `to_string(i32)`.
 - Fin de entrada, errores de lectura, entrada no ASCII y formato de valores en la salida.
 - Traducción a bytecode, que se abordará después de la sintaxis fuente.

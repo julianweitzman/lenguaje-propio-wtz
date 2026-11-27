@@ -346,14 +346,26 @@ void cambiar_original(i32* numero) {
 }
 ```
 
-El segundo ejemplo ilustra la firma; el cuerpo no es código ejecutable. Quedan
-por definir la sintaxis de llamada y desreferencia, la posibilidad de referencias
-nulas y las reglas de vida útil y aliasing. No se incorpora automáticamente el
+El segundo ejemplo ilustra la firma; el cuerpo no es código ejecutable.
+En la llamada se pasará una referencia explícita mediante `&variable`:
+
+```c
+i32 valor = 10;
+cambiar_original(&valor);
+```
+
+`&valor` permitirá a la función acceder al dato original a través de su parámetro
+`i32*`. En cambio, un parámetro `i32` recibirá una copia al llamar con `valor`.
+Se mantiene la inmutabilidad de `const`: no se podrá usar esta forma para
+modificar una constante.
+
+Quedan por definir la desreferencia dentro del cuerpo, la posibilidad de
+referencias nulas y las reglas de vida útil y aliasing. No se incorpora automáticamente el
 sistema de punteros ni la aritmética de direcciones de C.
 
 La semántica de copia de valores compuestos, asignación y retornos y la
-administración de memoria siguen pendientes. La propuesta anterior de usar `&`
-no queda adoptada: la notación acordada para parámetros modificables es `tipo*`.
+administración de memoria siguen pendientes. La notación acordada combina
+`tipo*` en el parámetro y `&variable` en la llamada.
 El tratamiento de `self` se decidirá por separado.
 
 ## Namespaces y visibilidad
@@ -619,7 +631,7 @@ se revisarán más adelante y no limitan las características del lenguaje fuent
 - Conversiones numéricas, división y desplazamientos inválidos.
 - Inicialización diferida de constantes e inmutabilidad de compuestos y referencias.
 - Alcance de `use` entre bloques del mismo archivo y carga de archivos.
-- Llamadas y acceso mediante `tipo*`, copia de compuestos y administración de memoria.
+- Acceso al dato desde parámetros `tipo*`, copia de compuestos y administración de memoria.
 - Omisión de partes de la cabecera de `for` y reglas completas de operadores.
 - Análisis de inicialización entre funciones y semántica de `self`.
 - Ubicación permitida de los bloques `impl`.
